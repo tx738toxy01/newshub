@@ -1267,7 +1267,15 @@
             });
         }
 
-        async function fetchWithTimeout(url, parentSignal, timeoutMs = 5500) {
+        const SOURCE_CACHE_TTL = 5 * 60 * 1000;
+        let sourceFetchTimes = {};
+
+        try {
+            const savedTimes = localStorage.getItem('newshub_source_times');
+            if (savedTimes) sourceFetchTimes = JSON.parse(savedTimes);
+        } catch (e) {}
+
+        async function fetchWithTimeout(url, parentSignal, timeoutMs = 2600) {
             const controller = new AbortController();
             const onAbort = () => controller.abort();
             if (parentSignal) {
@@ -1283,91 +1291,92 @@
             }
         }
 
-        async function tryFetchFeedUrl(feedUrl, src, signal) {
-            try {
-                const r1 = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`, signal);
-                if (r1.ok) {
-                    const xmlText = await r1.text();
-                    const articles = parseXmlToArticles(xmlText, src);
-                    if (articles.length > 0) return articles;
-                }
-            } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+        async function fetchViaCodeTabs(feedUrl, src, signal) {
+            const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`, signal);
+            if (!res.ok) throw new Error('Failed');
+            const xml = await res.text();
+            const articles = parseXmlToArticles(xml, src);
+            if (!articles || articles.length === 0) throw new Error('No articles');
+            return articles;
+        }
+
+        async function fetchViaAllOrigins(feedUrl, src, signal) {
+            const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`, signal);
+            if (!res.ok) throw new Error('Failed');
+            const json = await res.json();
+            const xml = decodeAllOriginsContents(json.contents);
+            const articles = parseXmlToArticles(xml, src);
+            if (!articles || articles.length === 0) throw new Error('No articles');
+            return articles;
+        }
+
+        async function fetchViaRss2Json(feedUrl, src, signal) {
+            const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, signal);
+            if (!res.ok) throw new Error('Failed');
+            const json = await res.json();
+            if (json.status !== 'ok' || !json.items || json.items.length === 0) throw new Error('No articles');
+            return json.items.map(i => {
+                const parsedDate = i.pubDate ? new Date(i.pubDate.replace(' ', 'T')) : new Date();
+                const title = cleanTitle(i.title, src.name);
+                const desc = cleanHtml(i.description || i.content, src.name);
+                return {
+                    sourceId: src.id,
+                    sourceName: src.name,
+                    sourceDefaultCats: src.defaultCats || [],
+                    title: title,
+                    link: i.link || '#',
+                    pubDate: isNaN(parsedDate.getTime()) ? (i.pubDate ? new Date(i.pubDate) : new Date()) : parsedDate,
+                    description: desc === title ? '' : desc,
+                    categories: i.categories ? i.categories.map(c => c.toLowerCase().trim()) : [],
+                    image: extractImageFromJson(i)
+                };
+            });
+        }
+
+        async function fetchViaCorsProxy(feedUrl, src, signal) {
+            const res = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`, signal);
+            if (!res.ok) throw new Error('Failed');
+            const xml = await res.text();
+            const articles = parseXmlToArticles(xml, src);
+            if (!articles || articles.length === 0) throw new Error('No articles');
+            return articles;
+        }
+
+        async function fetchViaCorsLol(feedUrl, src, signal) {
+            const res = await fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(feedUrl)}`, signal);
+            if (!res.ok) throw new Error('Failed');
+            const xml = await res.text();
+            const articles = parseXmlToArticles(xml, src);
+            if (!articles || articles.length === 0) throw new Error('No articles');
+            return articles;
+        }
+
+        async function raceProxies(feedUrl, src, parentSignal) {
+            const raceController = new AbortController();
+            const onParentAbort = () => raceController.abort();
+            if (parentSignal) {
+                if (parentSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+                parentSignal.addEventListener('abort', onParentAbort, { once: true });
             }
 
-            try {
-                const r2 = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, signal);
-                if (r2.ok) {
-                    const d2 = await r2.json();
-                    if (d2.status === 'ok' && d2.items && d2.items.length > 0) {
-                        return d2.items.map(i => {
-                            const parsedDate = i.pubDate ? new Date(i.pubDate.replace(' ', 'T')) : new Date();
-                            const title = cleanTitle(i.title, src.name);
-                            const desc = cleanHtml(i.description || i.content, src.name);
-                            return {
-                                sourceId: src.id,
-                                sourceName: src.name,
-                                sourceDefaultCats: src.defaultCats || [],
-                                title: title,
-                                link: i.link || '#',
-                                pubDate: isNaN(parsedDate.getTime()) ? (i.pubDate ? new Date(i.pubDate) : new Date()) : parsedDate,
-                                description: desc === title ? '' : desc,
-                                categories: i.categories ? i.categories.map(c => c.toLowerCase().trim()) : [],
-                                image: extractImageFromJson(i)
-                            };
-                        });
-                    }
-                }
-            } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
-            }
+            const candidates = [
+                fetchViaCodeTabs(feedUrl, src, raceController.signal),
+                fetchViaAllOrigins(feedUrl, src, raceController.signal),
+                fetchViaRss2Json(feedUrl, src, raceController.signal),
+                fetchViaCorsProxy(feedUrl, src, raceController.signal),
+                fetchViaCorsLol(feedUrl, src, raceController.signal)
+            ];
 
             try {
-                const r3 = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`, signal);
-                if (r3.ok) {
-                    const d3 = await r3.json();
-                    const xmlText = decodeAllOriginsContents(d3.contents);
-                    const articles = parseXmlToArticles(xmlText, src);
-                    if (articles.length > 0) return articles;
-                }
+                const winner = await Promise.any(candidates);
+                raceController.abort();
+                return winner;
             } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+                raceController.abort();
+                return [];
+            } finally {
+                if (parentSignal) parentSignal.removeEventListener('abort', onParentAbort);
             }
-
-            try {
-                const r4 = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`, signal);
-                if (r4.ok) {
-                    const xmlText = await r4.text();
-                    const articles = parseXmlToArticles(xmlText, src);
-                    if (articles.length > 0) return articles;
-                }
-            } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
-            }
-
-            try {
-                const r5 = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`, signal);
-                if (r5.ok) {
-                    const xmlText = await r5.text();
-                    const articles = parseXmlToArticles(xmlText, src);
-                    if (articles.length > 0) return articles;
-                }
-            } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
-            }
-
-            try {
-                const r6 = await fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(feedUrl)}`, signal);
-                if (r6.ok) {
-                    const xmlText = await r6.text();
-                    const articles = parseXmlToArticles(xmlText, src);
-                    if (articles.length > 0) return articles;
-                }
-            } catch (e) {
-                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
-            }
-
-            return [];
         }
 
         function buildFallbackFeedUrl(src) {
@@ -1386,13 +1395,27 @@
         }
 
         async function fetchNewsForSource(src, signal) {
-            const directArticles = await tryFetchFeedUrl(src.url, src, signal);
-            if (directArticles.length > 0) return directArticles;
+            const lastFetched = sourceFetchTimes[src.id] || 0;
+            const isFresh = (Date.now() - lastFetched) < SOURCE_CACHE_TTL;
+            if (isFresh) {
+                const cached = rawArticlesCache.filter(a => a.sourceId === src.id);
+                if (cached.length > 0) return cached;
+            }
 
-            const fallbackUrl = buildFallbackFeedUrl(src);
-            if (fallbackUrl) {
-                const fallbackArticles = await tryFetchFeedUrl(fallbackUrl, src, signal);
-                if (fallbackArticles.length > 0) return fallbackArticles;
+            let articles = await raceProxies(src.url, src, signal);
+            if (!articles || articles.length === 0) {
+                const fallbackUrl = buildFallbackFeedUrl(src);
+                if (fallbackUrl) {
+                    articles = await raceProxies(fallbackUrl, src, signal);
+                }
+            }
+
+            if (articles && articles.length > 0) {
+                sourceFetchTimes[src.id] = Date.now();
+                try {
+                    localStorage.setItem('newshub_source_times', JSON.stringify(sourceFetchTimes));
+                } catch (e) {}
+                return articles;
             }
 
             return [];
@@ -1425,11 +1448,11 @@
                 `;
                 status.innerText = `Načítavam (0/${checkedSources.length})...`;
             } else {
-                status.innerText = `Aktualizujem na pozadí (0/${checkedSources.length})...`;
+                status.innerText = `Blesková aktualizácia (0/${checkedSources.length})...`;
             }
 
             let completedCount = 0;
-            const concurrency = 4;
+            const concurrency = 12;
             const queue = [...checkedSources];
 
             async function worker() {
@@ -1447,8 +1470,8 @@
                             res.forEach(a => map.set(a.link, a));
                             rawArticlesCache = Array.from(map.values());
                             rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
-                            if (rawArticlesCache.length > 250) {
-                                rawArticlesCache = rawArticlesCache.slice(0, 250);
+                            if (rawArticlesCache.length > 300) {
+                                rawArticlesCache = rawArticlesCache.slice(0, 300);
                             }
                             saveCachedArticles();
 
@@ -1461,14 +1484,14 @@
                                     if (pill) pill.classList.add('show');
                                 }
                                 if (completedCount < checkedSources.length) {
-                                    status.innerText = `Aktualizujem na pozadí (${completedCount}/${checkedSources.length})...`;
+                                    status.innerText = `Aktualizujem (${completedCount}/${checkedSources.length})...`;
                                 } else {
                                     status.innerText = `Zobrazených ${articlesCache.length} správ`;
                                 }
                             }
                         } else {
                             if (hasVisibleArticles) {
-                                status.innerText = `Aktualizujem na pozadí (${completedCount}/${checkedSources.length})...`;
+                                status.innerText = `Aktualizujem (${completedCount}/${checkedSources.length})...`;
                             } else {
                                 status.innerText = `Načítavam (${completedCount}/${checkedSources.length})...`;
                             }
