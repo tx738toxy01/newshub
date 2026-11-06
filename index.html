@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokročilý Spravodajský Portál</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #1e293b;
+            --accent: #3b82f6;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-view, .dropbtn {
+            background-color: var(--secondary);
+            color: white;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-view:hover, .dropbtn:hover {
+            background-color: #27364b;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 45px;
+            background-color: var(--card-bg);
+            min-width: 340px;
+            max-height: 500px;
+            overflow-y: auto;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            z-index: 1000;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .source-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .source-controls button {
+            flex: 1;
+            padding: 8px;
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .source-controls button:hover {
+            background: #e2e8f0;
+        }
+
+        .source-group {
+            margin-bottom: 15px;
+        }
+
+        .group-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            padding: 6px 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            color: var(--text-main);
+            border-radius: 4px;
+        }
+
+        .source-item:hover {
+            background-color: #f1f5f9;
+        }
+
+        .source-item input {
+            margin-right: 10px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .layout {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            gap: 30px;
+        }
+
+        .sidebar {
+            flex: 0 0 250px;
+            position: sticky;
+            top: 90px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+            padding-left: 10px;
+        }
+
+        .menu {
+            list-style: none;
+        }
+
+        .menu li {
+            padding: 12px 15px;
+            margin-bottom: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-main);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu li:hover {
+            background-color: #e2e8f0;
+        }
+
+        .menu li.active {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .content-header h2 {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .card-img-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            background-color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .card-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-badge {
+            display: inline-block;
+            align-self: flex-start;
+            background-color: #eff6ff;
+            color: var(--accent);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.4;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .card-desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            line-height: 1.5;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            font-size: 0.8rem;
+        }
+
+        .card-date {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .card-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .card-link:hover {
+            text-decoration: underline;
+        }
+
+        .grid.list-view {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .grid.list-view .card {
+            flex-direction: row;
+            height: 110px;
+            border-radius: 8px;
+        }
+
+        .grid.list-view .card:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .grid.list-view .card-img-wrapper {
+            width: 130px;
+            padding-top: 0;
+            height: 100%;
+            flex-shrink: 0;
+        }
+
+        .grid.list-view .card-img {
+            position: relative;
+        }
+
+        .grid.list-view .card-content {
+            padding: 10px 15px;
+            justify-content: space-between;
+        }
+
+        .grid.list-view .card-badge {
+            margin-bottom: 6px;
+            padding: 2px 8px;
+            font-size: 0.65rem;
+        }
+
+        .grid.list-view .card-title {
+            font-size: 0.95rem;
+            line-height: 1.3;
+            margin-bottom: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .grid.list-view .card-desc {
+            display: none;
+        }
+
+        .grid.list-view .card-footer {
+            padding-top: 4px;
+            border-top: none;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid.list-view .card {
+                height: 100px;
+            }
+            .grid.list-view .card-img-wrapper {
+                width: 100px;
+            }
+            .grid.list-view .card-content {
+                padding: 8px 12px;
+            }
+            .grid.list-view .card-title {
+                font-size: 0.85rem;
+            }
+        }
+
+        .loader {
+            grid-column: 1 / -1;
+            padding: 60px;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 1.1rem;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(59, 130, 246, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            padding: 60px 20px;
+            text-align: center;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px dashed #cbd5e1;
+            color: var(--text-light);
+        }
+
+        @media (max-width: 1024px) {
+            .layout { flex-direction: column; }
+            .sidebar { flex: none; height: auto; position: static; margin-bottom: 20px; }
+            .menu { display: flex; flex-wrap: wrap; gap: 10px; }
+            .menu li { margin-bottom: 0; padding: 8px 12px; font-size: 0.9rem; }
+            .sidebar-title { display: none; }
+            .header-actions { flex-direction: column; align-items: flex-end; gap: 5px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>📰 NewsHub</h1>
+        <div class="header-actions">
+            <button class="btn-view" id="view-toggle-btn" onclick="toggleView()">⊞ Mriežka</button>
+            <div class="dropdown">
+                <button class="dropbtn" id="dropdown-btn" onclick="toggleDropdown()">Zdroje (Vybraté: 0) ▾</button>
+                <div id="sourcesDropdown" class="dropdown-content">
+                    <div class="source-controls">
+                        <button onclick="toggleAllSources(true)">Označiť všetky</button>
+                        <button onclick="toggleAllSources(false)">Zrušiť všetky</button>
+                    </div>
+                    <div id="sources-list-container"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="sidebar-title">Sekcie Správ</div>
+            <ul class="menu" id="categories-menu"></ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="content-header">
+                <h2 id="current-category-title">⚡ Najnovšie</h2>
+                <div class="status-text" id="status-text">Pripravené</div>
+            </div>
+            <div class="grid" id="news-grid">
+                <div class="empty-state">Načítavam zoznam zdrojov...</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+        const STORAGE_SOURCES_KEY = 'newshub_selected_sources';
+        const STORAGE_VIEW_KEY = 'newshub_list_view';
+
+        const categories = [
+            { id: 'all', name: 'Najnovšie', icon: '⚡', tags: [] },
+            { id: 'domov', name: 'Domáce', icon: '🇸🇰', tags: ['slovensko', 'domov', 'domáce', 'politika', 'z domova', 'regióny', 'komentáre', 'spoločnosť', 'domácí', 'česko', 'zprávy z domova', 'vlád', 'parlament', 'minister', 'prezident', 'bratislav', 'košic', 'politics', 'national'] },
+            { id: 'svet', name: 'Zahraničie', icon: '🌍', tags: ['svet', 'zahraničie', 'ukrajina', 'zo sveta', 'zahraničná politika', 'zahraničí', 'svět', 'ze světa', 'rusko', 'usa', 'európ', 'eú', 'nato', 'world', 'international', 'europe', 'global', 'foreign'] },
+            { id: 'ekonomika', name: 'Ekonomika', icon: '📈', tags: ['ekonomika', 'financie', 'biznis', 'peniaze', 'hospodárstvo', 'byznys', 'finance', 'ekonomické', 'bank', 'infláci', 'invest', ' trh', 'ceny', 'daň', 'dane', 'business', 'economy', 'markets', 'money', 'financial'] },
+            { id: 'sport', name: 'Šport', icon: '⚽', tags: ['šport', 'sport', 'futbal', 'hokej', 'tenis', 'cyklistika', 'nhl', 'športové', 'fotbal', 'zápas', 'turnaj', 'majstrovstvá', 'liga', 'gól', 'sports', 'football', 'soccer', 'tennis'] },
+            { id: 'tech', name: 'Technológie', icon: '💻', tags: ['tech', 'technológie', 'veda', 'vesmír', 'it', 'počítače', 'veda a technika', 'mobil', 'technologie', 'věda', 'smartfón', 'aplikáci', 'internet', 'umelá inteligencia', 'technology', 'science', 'space', 'ai', 'digital', 'gadgets', 'software', 'apple', 'google', 'microsoft'] },
+            { id: 'kultura', name: 'Kultúra', icon: '🎭', tags: ['kultúra', 'umenie', 'film', 'hudba', 'šoubiznis', 'televízia', 'kultura', 'umění', 'divadlo', 'koncert', 'herec', 'spevák', 'knih', 'culture', 'arts', 'entertainment', 'music', 'movies', 'books', 'tv'] },
+            { id: 'zdravie', name: 'Zdravie', icon: '🏥', tags: ['zdravie', 'medicína', 'životný štýl', 'rodina', 'fitness', 'zdraví', 'životní styl', 'lekár', 'nemocnic', 'pacient', 'chorob', 'liečb', 'health', 'medicine', 'lifestyle', 'wellness', 'medical'] },
+            { id: 'krimi', name: 'Krimi', icon: '🚓', tags: ['krimi', 'polícia', 'súd', 'krimi a nehody', 'zločin', 'policie', 'soud', 'nehody', 'nehoda', 'obvinen', 'väzen', 'vražd', 'krádež', 'hasič', 'crime', 'police', 'court', 'justice', 'law'] },
+            { id: 'auto', name: 'Auto-Moto', icon: '🚗', tags: ['auto', 'moto', 'auto-moto', 'doprava', 'automobilky', 'auta', 'automobily', 'vodič', 'diaľnic', 'elektromobil', 'cars', 'automotive', 'transport', 'vehicles', 'ev'] }
+        ];
+
+        const sources = [
+            { id: 'sk_1', lang: 'sk', group: 'Slovensko', url: 'https://www.aktuality.sk/rss/', name: 'Aktuality.sk', defaultCats: ['domov'] },
+            { id: 'sk_2', lang: 'sk', group: 'Slovensko', url: 'https://spravy.pravda.sk/rss/xml/', name: 'Pravda.sk', defaultCats: ['domov'] },
+            { id: 'sk_3', lang: 'sk', group: 'Slovensko', url: 'https://dennikn.sk/feed/', name: 'Denník N', defaultCats: ['domov'] },
+            { id: 'sk_4', lang: 'sk', group: 'Slovensko', url: 'https://www.teraz.sk/rss/vsetko.rss', name: 'Teraz.sk', defaultCats: ['domov'] },
+            { id: 'sk_5', lang: 'sk', group: 'Slovensko', url: 'https://hnonline.sk/feed', name: 'HNonline.sk', defaultCats: ['domov', 'ekonomika'] },
+            { id: 'sk_6', lang: 'sk', group: 'Slovensko', url: 'https://www.ta3.com/rss', name: 'TA3', defaultCats: ['domov'] },
+            { id: 'sk_7', lang: 'sk', group: 'Slovensko', url: 'https://www.trend.sk/rss', name: 'Trend.sk', defaultCats: ['ekonomika'] },
+            { id: 'sk_8', lang: 'sk', group: 'Slovensko', url: 'https://zive.aktuality.sk/rss/', name: 'Živé.sk', defaultCats: ['tech'] },
+            { id: 'sk_9', lang: 'sk', group: 'Slovensko', url: 'https://www.postoj.sk/rss', name: 'Postoj.sk', defaultCats: ['domov'] },
+            { id: 'sk_10', lang: 'sk', group: 'Slovensko', url: 'https://www.startitup.sk/feed/', name: 'Startitup.sk', defaultCats: ['domov'] },
+            { id: 'sk_11', lang: 'sk', group: 'Slovensko', url: 'https://fontech.startitup.sk/feed/', name: 'FonTech.sk', defaultCats: ['tech'] },
+            { id: 'sk_12', lang: 'sk', group: 'Slovensko', url: 'https://tvnoviny.sk/rss', name: 'TVNoviny.sk', defaultCats: ['domov'] },
+            { id: 'sk_13', lang: 'sk', group: 'Slovensko', url: 'https://www.topky.sk/rss/topky.xml', name: 'Topky.sk', defaultCats: ['domov'] },
+            { id: 'sk_14', lang: 'sk', group: 'Slovensko', url: 'https://www.cas.sk/rss/', name: 'Nový Čas', defaultCats: ['domov'] },
+            { id: 'sk_15', lang: 'sk', group: 'Slovensko', url: 'https://plus7dni.pluska.sk/rss', name: 'Pluska.sk', defaultCats: ['domov'] },
+            { id: 'sk_16', lang: 'sk', group: 'Slovensko', url: 'https://refresher.sk/rss', name: 'Refresher.sk', defaultCats: ['kultura'] },
+            { id: 'sk_17', lang: 'sk', group: 'Slovensko', url: 'https://www.webnoviny.sk/feed/', name: 'Webnoviny.sk', defaultCats: ['domov'] },
+            { id: 'sk_18', lang: 'sk', group: 'Slovensko', url: 'https://www.dobrenoviny.sk/rss', name: 'Dobré Noviny', defaultCats: ['domov'] },
+            { id: 'sk_19', lang: 'sk', group: 'Slovensko', url: 'https://www.interez.sk/feed/', name: 'Interez.sk', defaultCats: ['zdravie', 'kultura'] },
+            { id: 'sk_20', lang: 'sk', group: 'Slovensko', url: 'https://www.banoviny.sk/rss', name: 'Bratislavské Noviny', defaultCats: ['domov'] },
+
+            { id: 'cz_1', lang: 'cz', group: 'Česko', url: 'https://ct24.ceskatelevize.cz/rss/hlavni-zpravy', name: 'ČT24', defaultCats: ['svet'] },
+            { id: 'cz_2', lang: 'cz', group: 'Česko', url: 'https://www.irozhlas.cz/rss/irozhlas', name: 'iROZHLAS.cz', defaultCats: ['svet'] },
+            { id: 'cz_3', lang: 'cz', group: 'Česko', url: 'https://www.seznamzpravy.cz/rss', name: 'Seznam Zprávy', defaultCats: ['svet'] },
+            { id: 'cz_4', lang: 'cz', group: 'Česko', url: 'https://www.novinky.cz/rss', name: 'Novinky.cz', defaultCats: ['svet'] },
+            { id: 'cz_5', lang: 'cz', group: 'Česko', url: 'https://servis.idnes.cz/rss.aspx?c=zpravodaj', name: 'iDNES.cz', defaultCats: ['svet'] },
+            { id: 'cz_6', lang: 'cz', group: 'Česko', url: 'https://vyber.aktualne.cz/rss/', name: 'Aktuálně.cz', defaultCats: ['svet'] },
+            { id: 'cz_7', lang: 'cz', group: 'Česko', url: 'https://servis.lidovky.cz/rss.aspx?c=ln_domov', name: 'Lidovky.cz', defaultCats: ['svet'] },
+            { id: 'cz_8', lang: 'cz', group: 'Česko', url: 'https://denikn.cz/feed/', name: 'Deník N (CZ)', defaultCats: ['svet'] },
+            { id: 'cz_9', lang: 'cz', group: 'Česko', url: 'https://www.denik.cz/rss/z-domova.html', name: 'Deník.cz', defaultCats: ['svet'] },
+            { id: 'cz_10', lang: 'cz', group: 'Česko', url: 'https://www.respekt.cz/feed', name: 'Respekt.cz', defaultCats: ['svet'] },
+            { id: 'cz_11', lang: 'cz', group: 'Česko', url: 'https://www.reflex.cz/rss', name: 'Reflex.cz', defaultCats: ['kultura'] },
+            { id: 'cz_12', lang: 'cz', group: 'Česko', url: 'https://www.e15.cz/rss', name: 'E15.cz', defaultCats: ['ekonomika'] },
+            { id: 'cz_13', lang: 'cz', group: 'Česko', url: 'https://www.echo24.cz/rss', name: 'Echo24.cz', defaultCats: ['svet'] },
+            { id: 'cz_14', lang: 'cz', group: 'Česko', url: 'https://forbes.cz/feed/', name: 'Forbes CZ', defaultCats: ['ekonomika'] },
+            { id: 'cz_15', lang: 'cz', group: 'Česko', url: 'https://www.zive.cz/rss/sc-47/', name: 'Živě.cz', defaultCats: ['tech'] },
+            { id: 'cz_16', lang: 'cz', group: 'Česko', url: 'https://www.lupa.cz/rss/clanky/', name: 'Lupa.cz', defaultCats: ['tech'] },
+            { id: 'cz_17', lang: 'cz', group: 'Česko', url: 'https://www.root.cz/rss/clanky/', name: 'Root.cz', defaultCats: ['tech'] },
+            { id: 'cz_18', lang: 'cz', group: 'Česko', url: 'https://www.blesk.cz/rss', name: 'Blesk.cz', defaultCats: ['kultura'] },
+            { id: 'cz_19', lang: 'cz', group: 'Česko', url: 'https://servis.metro.cz/rss.aspx?c=metro_domov', name: 'Metro.cz', defaultCats: ['svet'] },
+            { id: 'cz_20', lang: 'cz', group: 'Česko', url: 'https://www.info.cz/rss', name: 'Info.cz', defaultCats: ['svet'] },
+
+            { id: 'en_1', lang: 'en', group: 'Svetové (EN)', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', name: 'BBC News', domain: 'bbc.com', defaultCats: ['svet'] },
+            { id: 'en_2', lang: 'en', group: 'Svetové (EN)', url: 'https://www.theguardian.com/world/rss', name: 'The Guardian', defaultCats: ['svet'] },
+            { id: 'en_3', lang: 'en', group: 'Svetové (EN)', url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', name: 'New York Times', domain: 'nytimes.com', defaultCats: ['svet'] },
+            { id: 'en_4', lang: 'en', group: 'Svetové (EN)', url: 'http://rss.cnn.com/rss/edition_world.rss', name: 'CNN', domain: 'cnn.com', defaultCats: ['svet'] },
+            { id: 'en_5', lang: 'en', group: 'Svetové (EN)', url: 'https://feeds.npr.org/1004/rss.xml', name: 'NPR', domain: 'npr.org', defaultCats: ['svet'] },
+            { id: 'en_6', lang: 'en', group: 'Svetové (EN)', url: 'https://www.aljazeera.com/xml/rss/all.xml', name: 'Al Jazeera', defaultCats: ['svet'] },
+            { id: 'en_7', lang: 'en', group: 'Svetové (EN)', url: 'https://rss.dw.com/rdf/rss-en-all', name: 'Deutsche Welle', domain: 'dw.com', defaultCats: ['svet'] },
+            { id: 'en_8', lang: 'en', group: 'Svetové (EN)', url: 'https://www.france24.com/en/rss', name: 'France 24', defaultCats: ['svet'] },
+            { id: 'en_9', lang: 'en', group: 'Svetové (EN)', url: 'https://www.euronews.com/rss', name: 'Euronews', defaultCats: ['svet'] },
+            { id: 'en_10', lang: 'en', group: 'Svetové (EN)', url: 'https://www.cnbc.com/id/100003114/device/rss/rss.html', name: 'CNBC', defaultCats: ['ekonomika', 'svet'] },
+            { id: 'en_11', lang: 'en', group: 'Svetové (EN)', url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml', name: 'Wall Street Journal', domain: 'wsj.com', defaultCats: ['ekonomika', 'svet'] },
+            { id: 'en_12', lang: 'en', group: 'Svetové (EN)', url: 'https://www.ft.com/rss/home', name: 'Financial Times', defaultCats: ['ekonomika', 'svet'] },
+            { id: 'en_13', lang: 'en', group: 'Svetové (EN)', url: 'https://rss.politico.com/politics-news.xml', name: 'Politico', domain: 'politico.com', defaultCats: ['svet'] },
+            { id: 'en_14', lang: 'en', group: 'Svetové (EN)', url: 'https://time.com/feed/', name: 'TIME', defaultCats: ['svet'] },
+            { id: 'en_15', lang: 'en', group: 'Svetové (EN)', url: 'https://techcrunch.com/feed/', name: 'TechCrunch', defaultCats: ['tech'] },
+            { id: 'en_16', lang: 'en', group: 'Svetové (EN)', url: 'https://www.theverge.com/rss/index.xml', name: 'The Verge', defaultCats: ['tech'] },
+            { id: 'en_17', lang: 'en', group: 'Svetové (EN)', url: 'https://www.wired.com/feed/rss', name: 'Wired', defaultCats: ['tech'] },
+            { id: 'en_18', lang: 'en', group: 'Svetové (EN)', url: 'https://feeds.arstechnica.com/arstechnica/index', name: 'Ars Technica', domain: 'arstechnica.com', defaultCats: ['tech'] },
+            { id: 'en_19', lang: 'en', group: 'Svetové (EN)', url: 'https://feeds.skynews.com/feeds/rss/world.xml', name: 'Sky News', domain: 'news.sky.com', defaultCats: ['svet'] },
+            { id: 'en_20', lang: 'en', group: 'Svetové (EN)', url: 'https://www.independent.co.uk/news/world/rss', name: 'The Independent', defaultCats: ['svet'] }
+        ];
+
+        let activeCategory = 'all';
+        let rawArticlesCache = [];
+        let articlesCache = [];
+        let fetchController = new AbortController();
+        let isListView = false;
+
+        function initUI() {
+            const catMenu = document.getElementById('categories-menu');
+            categories.forEach(cat => {
+                const li = document.createElement('li');
+                li.id = `cat-${cat.id}`;
+                li.innerHTML = `<span>${cat.icon}</span> ${cat.name}`;
+                if (cat.id === activeCategory) li.classList.add('active');
+                li.onclick = () => selectCategory(cat.id);
+                catMenu.appendChild(li);
+            });
+
+            const srcContainer = document.getElementById('sources-list-container');
+            const groups = [...new Set(sources.map(s => s.group))];
+
+            groups.forEach(groupName => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'source-group';
+                groupDiv.innerHTML = `<div class="group-title">${groupName}</div>`;
+
+                sources.filter(s => s.group === groupName).forEach(src => {
+                    const label = document.createElement('label');
+                    label.className = 'source-item';
+                    label.innerHTML = `<input type="checkbox" id="${src.id}" value="${src.id}" onchange="triggerFetch()"> <span>${src.name}</span>`;
+                    groupDiv.appendChild(label);
+                });
+                srcContainer.appendChild(groupDiv);
+            });
+
+            loadPreferences();
+            updateDropdownButton();
+            fetchNews();
+        }
+
+        function loadPreferences() {
+            try {
+                const savedView = localStorage.getItem(STORAGE_VIEW_KEY);
+                if (savedView === 'true') {
+                    isListView = true;
+                    document.getElementById('news-grid').classList.add('list-view');
+                    document.getElementById('view-toggle-btn').innerText = '☰ Zoznam';
+                }
+
+                const savedSources = localStorage.getItem(STORAGE_SOURCES_KEY);
+                if (savedSources !== null) {
+                    const parsedIds = JSON.parse(savedSources);
+                    if (Array.isArray(parsedIds) && parsedIds.length > 0) {
+                        sources.forEach(src => {
+                            const el = document.getElementById(src.id);
+                            if (el) el.checked = parsedIds.includes(src.id);
+                        });
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            ['sk_1', 'sk_2', 'sk_3'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.checked = true;
+            });
+        }
+
+        function saveSelectedSources() {
+            try {
+                const checkedIds = getCheckedSources().map(s => s.id);
+                localStorage.setItem(STORAGE_SOURCES_KEY, JSON.stringify(checkedIds));
+            } catch (e) {}
+        }
+
+        function toggleView() {
+            isListView = !isListView;
+            const grid = document.getElementById('news-grid');
+            const btn = document.getElementById('view-toggle-btn');
+
+            if (isListView) {
+                grid.classList.add('list-view');
+                btn.innerText = '☰ Zoznam';
+            } else {
+                grid.classList.remove('list-view');
+                btn.innerText = '⊞ Mriežka';
+            }
+
+            try {
+                localStorage.setItem(STORAGE_VIEW_KEY, String(isListView));
+            } catch (e) {}
+        }
+
+        function toggleDropdown() {
+            document.getElementById("sourcesDropdown").classList.toggle("show");
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropbtn') && !event.target.closest('.dropdown-content')) {
+                const dropdowns = document.getElementsByClassName("dropdown-content");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show');
+                }
+            }
+        };
+
+        function toggleAllSources(state) {
+            sources.forEach(src => {
+                const el = document.getElementById(src.id);
+                if (el) el.checked = state;
+            });
+            triggerFetch();
+        }
+
+        function updateDropdownButton() {
+            const checkedCount = getCheckedSources().length;
+            document.getElementById('dropdown-btn').innerText = `Zdroje (Vybraté: ${checkedCount}) ▾`;
+        }
+
+        function getCheckedSources() {
+            return sources.filter(src => {
+                const el = document.getElementById(src.id);
+                return el && el.checked;
+            });
+        }
+
+        function selectCategory(catId) {
+            document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
+            document.getElementById(`cat-${catId}`).classList.add('active');
+            activeCategory = catId;
+
+            const catInfo = categories.find(c => c.id === catId);
+            document.getElementById('current-category-title').innerText = `${catInfo.icon} ${catInfo.name}`;
+
+            applyFilterAndRender(false);
+        }
+
+        function triggerFetch() {
+            saveSelectedSources();
+            updateDropdownButton();
+            fetchNews();
+        }
+
+        function cleanHtml(rawHtml, sourceName = '') {
+            if (!rawHtml) return '';
+            const doc = new DOMParser().parseFromString(rawHtml, 'text/html');
+            let text = (doc.body.textContent || '').replace(/\s+/g, ' ').trim();
+            if (sourceName && text.endsWith(sourceName)) {
+                text = text.slice(0, -sourceName.length).replace(/[-–—|\s]+$/, '').trim();
+            }
+            return text.length > 150 ? text.substring(0, 150) + '...' : text;
+        }
+
+        function cleanTitle(rawTitle, sourceName = '') {
+            if (!rawTitle) return 'Bez názvu';
+            let title = rawTitle.trim();
+            if (sourceName) {
+                const parts = title.split(/\s+[-–—|]\s+/);
+                if (parts.length > 1) {
+                    const lastPart = parts[parts.length - 1].toLowerCase();
+                    const srcLower = sourceName.toLowerCase().replace(/\.(sk|cz|com|uk|org)$/i, '');
+                    if (lastPart.includes(srcLower) || srcLower.includes(lastPart)) {
+                        parts.pop();
+                        title = parts.join(' - ').trim();
+                    }
+                }
+            }
+            return title || 'Bez názvu';
+        }
+
+        function extractImageFromJson(item) {
+            if (item.enclosure && item.enclosure.link && (!item.enclosure.type || item.enclosure.type.includes('image'))) {
+                return item.enclosure.link;
+            }
+            if (item.thumbnail) return item.thumbnail;
+            const match = (item.description || item.content || '').match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (match && match[1] && !match[1].includes('googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc=s0-w300')) {
+                return match[1];
+            }
+            return DEFAULT_IMAGE;
+        }
+
+        function extractImageFromXmlItem(item, description) {
+            const enclosure = item.querySelector('enclosure');
+            if (enclosure) {
+                const type = enclosure.getAttribute('type') || '';
+                const url = enclosure.getAttribute('url');
+                if (url && (!type || type.includes('image'))) return url;
+            }
+
+            const mediaContents = item.getElementsByTagName('media:content');
+            for (let i = 0; i < mediaContents.length; i++) {
+                const url = mediaContents[i].getAttribute('url');
+                const medium = mediaContents[i].getAttribute('medium') || '';
+                const type = mediaContents[i].getAttribute('type') || '';
+                if (url && (!medium || medium === 'image' || type.includes('image'))) return url;
+            }
+
+            const mediaThumbnails = item.getElementsByTagName('media:thumbnail');
+            if (mediaThumbnails.length > 0 && mediaThumbnails[0].getAttribute('url')) {
+                return mediaThumbnails[0].getAttribute('url');
+            }
+
+            const encodedContent = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
+            const combinedHtml = description + ' ' + encodedContent;
+            const imgMatch = combinedHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+            if (imgMatch && imgMatch[1] && !imgMatch[1].includes('lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc')) {
+                return imgMatch[1];
+            }
+
+            return DEFAULT_IMAGE;
+        }
+
+        function decodeAllOriginsContents(contents) {
+            if (!contents || typeof contents !== 'string') return '';
+            if (contents.startsWith('data:') && contents.includes(';base64,')) {
+                try {
+                    const base64 = contents.split(';base64,')[1];
+                    const binStr = atob(base64);
+                    const bytes = new Uint8Array(binStr.length);
+                    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+                    return new TextDecoder('utf-8').decode(bytes);
+                } catch (e) {
+                    return '';
+                }
+            }
+            return contents;
+        }
+
+        function parseXmlToArticles(xmlString, src) {
+            if (!xmlString || typeof xmlString !== 'string') return [];
+            const cleanedXml = xmlString.trim().replace(/^[^<]+/, '');
+            if (!cleanedXml) return [];
+
+            const parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(cleanedXml, "text/xml");
+            let items = Array.from(xmlDoc.querySelectorAll("item, entry"));
+
+            if (items.length === 0) {
+                const sanitized = cleanedXml.replace(/&(?!(?:apos|quot|[gl]t|amp|#\d+|#x[0-9a-fA-F]+);)/g, '&amp;');
+                xmlDoc = parser.parseFromString(sanitized, "text/xml");
+                items = Array.from(xmlDoc.querySelectorAll("item, entry"));
+            }
+
+            if (items.length === 0) {
+                xmlDoc = parser.parseFromString(cleanedXml, "text/html");
+                items = Array.from(xmlDoc.querySelectorAll("item, entry"));
+            }
+
+            if (items.length === 0) return [];
+
+            return items.slice(0, 25).map(item => {
+                const rawTitle = item.querySelector('title')?.textContent || 'Bez názvu';
+                const title = cleanTitle(rawTitle, src.name);
+
+                let link = item.querySelector('link')?.textContent?.trim();
+                if (!link) {
+                    const linkEl = item.querySelector('link');
+                    if (linkEl) {
+                        link = linkEl.getAttribute('href') || linkEl.nextSibling?.nodeValue?.trim() || '';
+                    }
+                }
+                if (!link || !link.startsWith('http')) {
+                    const guid = item.querySelector('guid')?.textContent?.trim();
+                    if (guid && guid.startsWith('http')) link = guid;
+                }
+                if (!link) link = '#';
+
+                const pubDateRaw = item.querySelector('pubDate, pubdate, updated, published')?.textContent ||
+                                   item.getElementsByTagName('dc:date')[0]?.textContent;
+                const parsedDate = pubDateRaw ? new Date(pubDateRaw) : new Date();
+                const description = item.querySelector('description, summary, content')?.textContent || '';
+
+                const categoryTags = Array.from(item.querySelectorAll('category'))
+                    .map(c => (c.textContent || c.getAttribute('term') || '').toLowerCase().trim())
+                    .filter(Boolean);
+
+                const cleanedDesc = cleanHtml(description, src.name);
+
+                return {
+                    sourceId: src.id,
+                    sourceName: src.name,
+                    sourceDefaultCats: src.defaultCats || [],
+                    title: title,
+                    link: link,
+                    pubDate: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
+                    description: cleanedDesc === title ? '' : cleanedDesc,
+                    categories: categoryTags,
+                    image: extractImageFromXmlItem(item, description)
+                };
+            });
+        }
+
+        async function fetchWithTimeout(url, parentSignal, timeoutMs = 5500) {
+            const controller = new AbortController();
+            const onAbort = () => controller.abort();
+            if (parentSignal) {
+                if (parentSignal.aborted) throw new DOMException('Aborted', 'AbortError');
+                parentSignal.addEventListener('abort', onAbort, { once: true });
+            }
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, { signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+                if (parentSignal) parentSignal.removeEventListener('abort', onAbort);
+            }
+        }
+
+        async function tryFetchFeedUrl(feedUrl, src, signal) {
+            try {
+                const r1 = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`, signal);
+                if (r1.ok) {
+                    const xmlText = await r1.text();
+                    const articles = parseXmlToArticles(xmlText, src);
+                    if (articles.length > 0) return articles;
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            try {
+                const r2 = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, signal);
+                if (r2.ok) {
+                    const d2 = await r2.json();
+                    if (d2.status === 'ok' && d2.items && d2.items.length > 0) {
+                        return d2.items.map(i => {
+                            const parsedDate = i.pubDate ? new Date(i.pubDate.replace(' ', 'T')) : new Date();
+                            const title = cleanTitle(i.title, src.name);
+                            const desc = cleanHtml(i.description || i.content, src.name);
+                            return {
+                                sourceId: src.id,
+                                sourceName: src.name,
+                                sourceDefaultCats: src.defaultCats || [],
+                                title: title,
+                                link: i.link || '#',
+                                pubDate: isNaN(parsedDate.getTime()) ? (i.pubDate ? new Date(i.pubDate) : new Date()) : parsedDate,
+                                description: desc === title ? '' : desc,
+                                categories: i.categories ? i.categories.map(c => c.toLowerCase().trim()) : [],
+                                image: extractImageFromJson(i)
+                            };
+                        });
+                    }
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            try {
+                const r3 = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`, signal);
+                if (r3.ok) {
+                    const d3 = await r3.json();
+                    const xmlText = decodeAllOriginsContents(d3.contents);
+                    const articles = parseXmlToArticles(xmlText, src);
+                    if (articles.length > 0) return articles;
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            try {
+                const r4 = await fetchWithTimeout(`https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`, signal);
+                if (r4.ok) {
+                    const xmlText = await r4.text();
+                    const articles = parseXmlToArticles(xmlText, src);
+                    if (articles.length > 0) return articles;
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            try {
+                const r5 = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`, signal);
+                if (r5.ok) {
+                    const xmlText = await r5.text();
+                    const articles = parseXmlToArticles(xmlText, src);
+                    if (articles.length > 0) return articles;
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            try {
+                const r6 = await fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(feedUrl)}`, signal);
+                if (r6.ok) {
+                    const xmlText = await r6.text();
+                    const articles = parseXmlToArticles(xmlText, src);
+                    if (articles.length > 0) return articles;
+                }
+            } catch (e) {
+                if (signal && signal.aborted) throw new DOMException('Aborted', 'AbortError');
+            }
+
+            return [];
+        }
+
+        function buildFallbackFeedUrl(src) {
+            try {
+                const domain = src.domain || new URL(src.url).hostname.replace(/^www\.|^spravy\.|^servis\.|^vyber\.|^feeds\.|^rss\./i, '');
+                if (src.lang === 'sk') {
+                    return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=sk&gl=SK&ceid=SK:sk`;
+                }
+                if (src.lang === 'cz') {
+                    return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=cs&gl=CZ&ceid=CZ:cs`;
+                }
+                return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=en-US&gl=US&ceid=US:en`;
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async function fetchNewsForSource(src, signal) {
+            const directArticles = await tryFetchFeedUrl(src.url, src, signal);
+            if (directArticles.length > 0) return directArticles;
+
+            const fallbackUrl = buildFallbackFeedUrl(src);
+            if (fallbackUrl) {
+                const fallbackArticles = await tryFetchFeedUrl(fallbackUrl, src, signal);
+                if (fallbackArticles.length > 0) return fallbackArticles;
+            }
+
+            return [];
+        }
+
+        async function fetchNews() {
+            const checkedSources = getCheckedSources();
+            const grid = document.getElementById('news-grid');
+            const status = document.getElementById('status-text');
+
+            fetchController.abort();
+            fetchController = new AbortController();
+            const signal = fetchController.signal;
+
+            if (checkedSources.length === 0) {
+                rawArticlesCache = [];
+                articlesCache = [];
+                grid.innerHTML = `<div class="empty-state">Zaškrtnite aspoň jeden spravodajský zdroj.</div>`;
+                status.innerText = 'Žiadny zdroj';
+                return;
+            }
+
+            rawArticlesCache = [];
+            articlesCache = [];
+
+            grid.innerHTML = `
+                <div class="loader">
+                    <div class="spinner"></div>
+                    <div>Načítavam správy zo zvolených zdrojov...</div>
+                </div>
+            `;
+            status.innerText = `Načítavam (0/${checkedSources.length})...`;
+
+            let completedCount = 0;
+            const concurrency = 4;
+            const queue = [...checkedSources];
+
+            async function worker() {
+                while (queue.length > 0) {
+                    if (signal.aborted) return;
+                    const src = queue.shift();
+                    try {
+                        const res = await fetchNewsForSource(src, signal);
+                        if (signal.aborted) return;
+                        completedCount++;
+                        if (res.length > 0) {
+                            rawArticlesCache = rawArticlesCache.concat(res);
+                            rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
+                            applyFilterAndRender(completedCount < checkedSources.length, completedCount, checkedSources.length);
+                        } else {
+                            status.innerText = `Načítavam (${completedCount}/${checkedSources.length})...`;
+                        }
+                    } catch (e) {
+                        if (e.name === 'AbortError' || signal.aborted) return;
+                        completedCount++;
+                    }
+                }
+            }
+
+            try {
+                const workers = Array.from({ length: Math.min(concurrency, checkedSources.length) }, () => worker());
+                await Promise.all(workers);
+                if (!signal.aborted) {
+                    applyFilterAndRender(false, completedCount, checkedSources.length);
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError' && !signal.aborted) {
+                    grid.innerHTML = `<div class="empty-state">Nastala chyba. Skúste obnoviť stránku.</div>`;
+                    status.innerText = 'Chyba';
+                }
+            }
+        }
+
+        function applyFilterAndRender(isStillLoading = false, completed = 0, total = 0) {
+            const grid = document.getElementById('news-grid');
+            const status = document.getElementById('status-text');
+            const checkedSources = getCheckedSources();
+
+            if (checkedSources.length === 0) {
+                grid.innerHTML = `<div class="empty-state">Zaškrtnite aspoň jeden spravodajský zdroj.</div>`;
+                status.innerText = 'Žiadny zdroj';
+                return;
+            }
+
+            if (rawArticlesCache.length === 0) {
+                if (!isStillLoading) {
+                    grid.innerHTML = `<div class="empty-state">Nenašli sa žiadne články. Zvolené weby momentálne blokujú prístup.</div>`;
+                    status.innerText = 'Chyba spojenia so zdrojmi';
+                }
+                return;
+            }
+
+            let filteredArticles = rawArticlesCache;
+            const catInfo = categories.find(c => c.id === activeCategory);
+
+            if (activeCategory !== 'all' && catInfo && catInfo.tags.length > 0) {
+                filteredArticles = rawArticlesCache.filter(article => {
+                    const articleCats = article.categories.join(' ');
+                    const articleTitle = article.title.toLowerCase();
+                    const articleDesc = article.description.toLowerCase();
+
+                    const matchesKeyword = catInfo.tags.some(tag =>
+                        articleCats.includes(tag) ||
+                        articleTitle.includes(tag) ||
+                        articleDesc.includes(tag)
+                    );
+
+                    if (matchesKeyword) return true;
+
+                    if (article.categories.length === 0 && article.sourceDefaultCats && article.sourceDefaultCats.includes(activeCategory)) {
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
+
+            if (filteredArticles.length === 0 && activeCategory !== 'all') {
+                if (!isStillLoading) {
+                    grid.innerHTML = `<div class="empty-state">Pre túto kategóriu ("${catInfo.name}") sa v aktuálne načítaných správach nenašli žiadne články.</div>`;
+                    status.innerText = 'Načítaných 0 správ';
+                }
+                articlesCache = [];
+                return;
+            }
+
+            articlesCache = filteredArticles.slice(0, 100);
+            if (isStillLoading) {
+                status.innerText = `Načítavam (${completed}/${total}) • Zobrazených ${articlesCache.length} správ`;
+            } else {
+                status.innerText = `Zobrazených ${articlesCache.length} správ`;
+            }
+            renderArticles();
+        }
+
+        function renderArticles() {
+            const grid = document.getElementById('news-grid');
+
+            if (articlesCache.length === 0) {
+                return;
+            }
+
+            grid.innerHTML = articlesCache.map(article => {
+                const dateObj = isNaN(article.pubDate) ? new Date() : article.pubDate;
+                const dateStr = dateObj.toLocaleDateString('sk-SK');
+                const timeStr = dateObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+
+                const categoryBadge = article.categories.length > 0
+                    ? `<span style="margin-left: 10px; background: #e2e8f0; color: #475569;" class="card-badge">${article.categories[0]}</span>`
+                    : '';
+
+                return `
+                    <div class="card">
+                        <div class="card-img-wrapper">
+                            <img src="${article.image}" alt="Náhľad článku" class="card-img" loading="lazy" onerror="this.src='${DEFAULT_IMAGE}'">
+                        </div>
+                        <div class="card-content">
+                            <div>
+                                <span class="card-badge">${article.sourceName}</span>
+                                ${categoryBadge}
+                            </div>
+                            <h3 class="card-title">${article.title}</h3>
+                            <p class="card-desc">${article.description}</p>
+                            <div class="card-footer">
+                                <span class="card-date">${dateStr} &bull; ${timeStr}</span>
+                                <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="card-link">Čítať viac &rarr;</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        initUI();
+    </script>
+</body>
+</html>
