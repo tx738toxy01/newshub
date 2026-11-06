@@ -576,6 +576,28 @@
         const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
         const STORAGE_SOURCES_KEY = 'newshub_selected_sources';
         const STORAGE_VIEW_KEY = 'newshub_list_view';
+        const STORAGE_ARTICLES_KEY = 'newshub_cached_articles';
+
+        function loadCachedArticles() {
+            try {
+                const saved = localStorage.getItem(STORAGE_ARTICLES_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        rawArticlesCache = parsed.map(a => ({
+                            ...a,
+                            pubDate: new Date(a.pubDate)
+                        }));
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function saveCachedArticles() {
+            try {
+                localStorage.setItem(STORAGE_ARTICLES_KEY, JSON.stringify(rawArticlesCache.slice(0, 200)));
+            } catch (e) {}
+        }
 
         const categories = [
             { id: 'all', name: 'Najnovšie', icon: '⚡', tags: [] },
@@ -697,7 +719,11 @@
             });
 
             loadPreferences();
+            loadCachedArticles();
             updateDropdownButton();
+            if (rawArticlesCache.length > 0) {
+                applyFilterAndRender(true);
+            }
             fetchNews();
         }
 
@@ -838,6 +864,7 @@
         function triggerFetch() {
             saveSelectedSources();
             updateDropdownButton();
+            applyFilterAndRender(true);
             fetchNews();
         }
 
@@ -1132,23 +1159,25 @@
             const signal = fetchController.signal;
 
             if (checkedSources.length === 0) {
-                rawArticlesCache = [];
-                articlesCache = [];
                 grid.innerHTML = `<div class="empty-state">Zaškrtnite aspoň jeden spravodajský zdroj.</div>`;
                 status.innerText = 'Žiadny zdroj';
                 return;
             }
 
-            rawArticlesCache = [];
-            articlesCache = [];
+            const checkedIds = new Set(checkedSources.map(s => s.id));
+            const hasVisibleArticles = rawArticlesCache.some(a => checkedIds.has(a.sourceId));
 
-            grid.innerHTML = `
-                <div class="loader">
-                    <div class="spinner"></div>
-                    <div>Načítavam správy zo zvolených zdrojov...</div>
-                </div>
-            `;
-            status.innerText = `Načítavam (0/${checkedSources.length})...`;
+            if (!hasVisibleArticles) {
+                grid.innerHTML = `
+                    <div class="loader">
+                        <div class="spinner"></div>
+                        <div>Načítavam správy zo zvolených zdrojov...</div>
+                    </div>
+                `;
+                status.innerText = `Načítavam (0/${checkedSources.length})...`;
+            } else {
+                status.innerText = `Aktualizujem na pozadí (0/${checkedSources.length})...`;
+            }
 
             let completedCount = 0;
             const concurrency = 4;
@@ -1163,11 +1192,22 @@
                         if (signal.aborted) return;
                         completedCount++;
                         if (res.length > 0) {
-                            rawArticlesCache = rawArticlesCache.concat(res);
+                            const map = new Map();
+                            rawArticlesCache.forEach(a => map.set(a.link, a));
+                            res.forEach(a => map.set(a.link, a));
+                            rawArticlesCache = Array.from(map.values());
                             rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
+                            if (rawArticlesCache.length > 250) {
+                                rawArticlesCache = rawArticlesCache.slice(0, 250);
+                            }
+                            saveCachedArticles();
                             applyFilterAndRender(completedCount < checkedSources.length, completedCount, checkedSources.length);
                         } else {
-                            status.innerText = `Načítavam (${completedCount}/${checkedSources.length})...`;
+                            if (hasVisibleArticles) {
+                                status.innerText = `Aktualizujem na pozadí (${completedCount}/${checkedSources.length})...`;
+                            } else {
+                                status.innerText = `Načítavam (${completedCount}/${checkedSources.length})...`;
+                            }
                         }
                     } catch (e) {
                         if (e.name === 'AbortError' || signal.aborted) return;
@@ -1184,8 +1224,10 @@
                 }
             } catch (e) {
                 if (e.name !== 'AbortError' && !signal.aborted) {
-                    grid.innerHTML = `<div class="empty-state">Nastala chyba. Skúste obnoviť stránku.</div>`;
-                    status.innerText = 'Chyba';
+                    if (!hasVisibleArticles) {
+                        grid.innerHTML = `<div class="empty-state">Nastala chyba. Skúste obnoviť stránku.</div>`;
+                        status.innerText = 'Chyba';
+                    }
                 }
             }
         }
@@ -1201,7 +1243,10 @@
                 return;
             }
 
-            if (rawArticlesCache.length === 0) {
+            const checkedIds = new Set(checkedSources.map(s => s.id));
+            let validArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
+
+            if (validArticles.length === 0) {
                 if (!isStillLoading) {
                     grid.innerHTML = `<div class="empty-state">Nenašli sa žiadne články. Zvolené weby momentálne blokujú prístup.</div>`;
                     status.innerText = 'Chyba spojenia so zdrojmi';
@@ -1209,11 +1254,11 @@
                 return;
             }
 
-            let filteredArticles = rawArticlesCache;
+            let filteredArticles = validArticles;
             const catInfo = categories.find(c => c.id === activeCategory);
 
             if (activeCategory !== 'all' && catInfo && catInfo.tags.length > 0) {
-                filteredArticles = rawArticlesCache.filter(article => {
+                filteredArticles = validArticles.filter(article => {
                     const articleCats = article.categories.join(' ');
                     const articleTitle = article.title.toLowerCase();
                     const articleDesc = article.description.toLowerCase();
@@ -1245,7 +1290,7 @@
 
             articlesCache = filteredArticles.slice(0, 100);
             if (isStillLoading) {
-                status.innerText = `Načítavam (${completed}/${total}) • Zobrazených ${articlesCache.length} správ`;
+                status.innerText = `Aktualizujem (${completed}/${total}) • Zobrazených ${articlesCache.length} správ`;
             } else {
                 status.innerText = `Zobrazených ${articlesCache.length} správ`;
             }
