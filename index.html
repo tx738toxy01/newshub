@@ -140,6 +140,19 @@
             letter-spacing: 0.5px;
         }
 
+        .group-title label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .group-title input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
         .source-item {
             display: flex;
             align-items: center;
@@ -464,11 +477,8 @@
                 <button class="dropbtn" id="dropdown-btn" onclick="toggleDropdown()">Zdroje (Vybraté: 0) ▾</button>
                 <div id="sourcesDropdown" class="dropdown-content">
                     <div class="source-controls">
-                        <button onclick="toggleAllSources(true)">Všetky</button>
-                        <button onclick="toggleAllSources(false)">Žiadne</button>
-                        <button onclick="toggleAllSources(true, 'Slovensko')">+ SK</button>
-                        <button onclick="toggleAllSources(true, 'Česko')">+ CZ</button>
-                        <button onclick="toggleAllSources(true, 'Svetové (EN)')">+ Svet</button>
+                        <button onclick="toggleAllSources(true)">Označiť všetky</button>
+                        <button onclick="toggleAllSources(false)">Zrušiť všetky</button>
                     </div>
                     <div id="sources-list-container"></div>
                 </div>
@@ -599,7 +609,14 @@
             groups.forEach(groupName => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'source-group';
-                groupDiv.innerHTML = `<div class="group-title">${groupName}</div>`;
+                groupDiv.innerHTML = `
+                    <div class="group-title">
+                        <label>
+                            <input type="checkbox" id="group-cb-${groupName}" onchange="toggleGroup('${groupName}', this.checked)">
+                            <span>${groupName}</span>
+                        </label>
+                    </div>
+                `;
 
                 sources.filter(s => s.group === groupName).forEach(src => {
                     const label = document.createElement('label');
@@ -681,18 +698,39 @@
             }
         };
 
-        function toggleAllSources(state, group = null) {
+        function toggleAllSources(state) {
             sources.forEach(src => {
-                if (group && src.group !== group) return;
                 const el = document.getElementById(src.id);
                 if (el) el.checked = state;
             });
             triggerFetch();
         }
 
+        function toggleGroup(groupName, state) {
+            sources.filter(s => s.group === groupName).forEach(src => {
+                const el = document.getElementById(src.id);
+                if (el) el.checked = state;
+            });
+            triggerFetch();
+        }
+
+        function updateGroupCheckboxes() {
+            const groups = [...new Set(sources.map(s => s.group))];
+            groups.forEach(groupName => {
+                const groupSources = sources.filter(s => s.group === groupName);
+                const allChecked = groupSources.length > 0 && groupSources.every(s => {
+                    const el = document.getElementById(s.id);
+                    return el && el.checked;
+                });
+                const groupCb = document.getElementById(`group-cb-${groupName}`);
+                if (groupCb) groupCb.checked = allChecked;
+            });
+        }
+
         function updateDropdownButton() {
             const checkedCount = getCheckedSources().length;
             document.getElementById('dropdown-btn').innerText = `Zdroje (Vybraté: ${checkedCount}) ▾`;
+            updateGroupCheckboxes();
         }
 
         function getCheckedSources() {
