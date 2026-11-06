@@ -318,6 +318,36 @@
             font-weight: 500;
         }
 
+        .new-articles-pill {
+            position: fixed;
+            top: 75px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+            z-index: 900;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+        }
+
+        .new-articles-pill.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .new-articles-pill:hover {
+            background-color: #2563eb;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -569,6 +599,7 @@
 
     <div class="layout">
         <main class="main-content">
+            <button id="new-articles-pill" class="new-articles-pill" onclick="showNewestArticles()">↑ Najnovšie</button>
             <div class="content-header">
                 <h2 id="current-category-title">⚡ Najnovšie</h2>
                 <div class="status-text" id="status-text">Pripravené</div>
@@ -856,7 +887,17 @@
             }
         }
 
+        function showNewestArticles() {
+            const pill = document.getElementById('new-articles-pill');
+            if (pill) pill.classList.remove('show');
+            applyFilterAndRender(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         function selectCategory(catId) {
+            const pill = document.getElementById('new-articles-pill');
+            if (pill) pill.classList.remove('show');
+
             document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
             document.getElementById(`cat-${catId}`).classList.add('active');
             activeCategory = catId;
@@ -1199,6 +1240,7 @@
                         if (signal.aborted) return;
                         completedCount++;
                         if (res.length > 0) {
+                            const currentTopLink = articlesCache[0]?.link;
                             const map = new Map();
                             rawArticlesCache.forEach(a => map.set(a.link, a));
                             res.forEach(a => map.set(a.link, a));
@@ -1208,7 +1250,21 @@
                                 rawArticlesCache = rawArticlesCache.slice(0, 250);
                             }
                             saveCachedArticles();
-                            applyFilterAndRender(completedCount < checkedSources.length, completedCount, checkedSources.length);
+
+                            if (articlesCache.length === 0) {
+                                applyFilterAndRender(completedCount < checkedSources.length, completedCount, checkedSources.length);
+                            } else {
+                                const freshFiltered = getFilteredArticles();
+                                if (freshFiltered.length > 0 && freshFiltered[0].link !== currentTopLink) {
+                                    const pill = document.getElementById('new-articles-pill');
+                                    if (pill) pill.classList.add('show');
+                                }
+                                if (completedCount < checkedSources.length) {
+                                    status.innerText = `Aktualizujem na pozadí (${completedCount}/${checkedSources.length})...`;
+                                } else {
+                                    status.innerText = `Zobrazených ${articlesCache.length} správ`;
+                                }
+                            }
                         } else {
                             if (hasVisibleArticles) {
                                 status.innerText = `Aktualizujem na pozadí (${completedCount}/${checkedSources.length})...`;
@@ -1226,8 +1282,10 @@
             try {
                 const workers = Array.from({ length: Math.min(concurrency, checkedSources.length) }, () => worker());
                 await Promise.all(workers);
-                if (!signal.aborted) {
+                if (!signal.aborted && articlesCache.length === 0) {
                     applyFilterAndRender(false, completedCount, checkedSources.length);
+                } else if (!signal.aborted) {
+                    status.innerText = `Zobrazených ${articlesCache.length} správ`;
                 }
             } catch (e) {
                 if (e.name !== 'AbortError' && !signal.aborted) {
@@ -1237,6 +1295,38 @@
                     }
                 }
             }
+        }
+
+        function getFilteredArticles() {
+            const checkedSources = getCheckedSources();
+            if (checkedSources.length === 0) return [];
+            const checkedIds = new Set(checkedSources.map(s => s.id));
+            let validArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
+            if (validArticles.length === 0) return [];
+
+            const catInfo = categories.find(c => c.id === activeCategory);
+            if (activeCategory !== 'all' && catInfo && catInfo.tags.length > 0) {
+                return validArticles.filter(article => {
+                    const articleCats = article.categories.join(' ');
+                    const articleTitle = article.title.toLowerCase();
+                    const articleDesc = article.description.toLowerCase();
+
+                    const matchesKeyword = catInfo.tags.some(tag =>
+                        articleCats.includes(tag) ||
+                        articleTitle.includes(tag) ||
+                        articleDesc.includes(tag)
+                    );
+
+                    if (matchesKeyword) return true;
+
+                    if (article.categories.length === 0 && article.sourceDefaultCats && article.sourceDefaultCats.includes(activeCategory)) {
+                        return true;
+                    }
+
+                    return false;
+                });
+            }
+            return validArticles;
         }
 
         function applyFilterAndRender(isStillLoading = false, completed = 0, total = 0) {
@@ -1261,34 +1351,12 @@
                 return;
             }
 
-            let filteredArticles = validArticles;
-            const catInfo = categories.find(c => c.id === activeCategory);
-
-            if (activeCategory !== 'all' && catInfo && catInfo.tags.length > 0) {
-                filteredArticles = validArticles.filter(article => {
-                    const articleCats = article.categories.join(' ');
-                    const articleTitle = article.title.toLowerCase();
-                    const articleDesc = article.description.toLowerCase();
-
-                    const matchesKeyword = catInfo.tags.some(tag =>
-                        articleCats.includes(tag) ||
-                        articleTitle.includes(tag) ||
-                        articleDesc.includes(tag)
-                    );
-
-                    if (matchesKeyword) return true;
-
-                    if (article.categories.length === 0 && article.sourceDefaultCats && article.sourceDefaultCats.includes(activeCategory)) {
-                        return true;
-                    }
-
-                    return false;
-                });
-            }
+            let filteredArticles = getFilteredArticles();
 
             if (filteredArticles.length === 0 && activeCategory !== 'all') {
+                const catInfo = categories.find(c => c.id === activeCategory);
                 if (!isStillLoading) {
-                    grid.innerHTML = `<div class="empty-state">Pre túto kategóriu ("${catInfo.name}") sa v aktuálne načítaných správach nenašli žiadne články.</div>`;
+                    grid.innerHTML = `<div class="empty-state">Pre túto kategóriu ("${catInfo ? catInfo.name : ''}") sa v aktuálne načítaných správach nenašli žiadne články.</div>`;
                     status.innerText = 'Načítaných 0 správ';
                 }
                 articlesCache = [];
