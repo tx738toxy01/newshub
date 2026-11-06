@@ -182,12 +182,67 @@
             gap: 30px;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-menu {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.6rem;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .btn-menu:hover {
+            background-color: var(--secondary);
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 998;
+        }
+
+        .sidebar-overlay.show {
+            display: block;
+        }
+
         .sidebar {
-            flex: 0 0 250px;
-            position: sticky;
-            top: 90px;
-            height: calc(100vh - 120px);
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            max-width: 85vw;
+            height: 100vh;
+            background-color: var(--card-bg);
+            box-shadow: 10px 0 25px rgba(0, 0, 0, 0.25);
+            z-index: 999;
+            padding: 20px;
+            transition: left 0.25s ease;
             overflow-y: auto;
+        }
+
+        .sidebar.show {
+            left: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
         }
 
         .sidebar-title {
@@ -195,9 +250,21 @@
             text-transform: uppercase;
             font-weight: 700;
             color: var(--text-light);
-            margin-bottom: 15px;
             letter-spacing: 1px;
-            padding-left: 10px;
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            line-height: 1;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 4px;
+        }
+
+        .sidebar-close:hover {
+            color: var(--text-main);
         }
 
         .menu {
@@ -458,11 +525,6 @@
         }
 
         @media (max-width: 1024px) {
-            .layout { flex-direction: column; }
-            .sidebar { flex: none; height: auto; position: static; margin-bottom: 20px; }
-            .menu { display: flex; flex-wrap: wrap; gap: 10px; }
-            .menu li { margin-bottom: 0; padding: 8px 12px; font-size: 0.9rem; }
-            .sidebar-title { display: none; }
             .header-actions { flex-direction: column; align-items: flex-end; gap: 5px; }
         }
     </style>
@@ -470,7 +532,10 @@
 <body>
 
     <header>
-        <h1>📰 NewsHub</h1>
+        <div class="header-left">
+            <h1>📰 NewsHub</h1>
+            <button class="btn-menu" id="menu-btn" onclick="toggleSidebar()">☰</button>
+        </div>
         <div class="header-actions">
             <button class="btn-view" id="view-toggle-btn" onclick="toggleView()">⊞ Mriežka</button>
             <div class="dropdown">
@@ -486,12 +551,16 @@
         </div>
     </header>
 
-    <div class="layout">
-        <aside class="sidebar">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
             <div class="sidebar-title">Sekcie Správ</div>
-            <ul class="menu" id="categories-menu"></ul>
-        </aside>
+            <button class="sidebar-close" onclick="toggleSidebar(false)">✕</button>
+        </div>
+        <ul class="menu" id="categories-menu"></ul>
+    </aside>
 
+    <div class="layout">
         <main class="main-content">
             <div class="content-header">
                 <h2 id="current-category-title">⚡ Najnovšie</h2>
@@ -740,6 +809,20 @@
             });
         }
 
+        function toggleSidebar(forceState = null) {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const isOpen = sidebar.classList.contains('show');
+            const nextState = forceState !== null ? forceState : !isOpen;
+            if (nextState) {
+                sidebar.classList.add('show');
+                overlay.classList.add('show');
+            } else {
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+            }
+        }
+
         function selectCategory(catId) {
             document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
             document.getElementById(`cat-${catId}`).classList.add('active');
@@ -749,6 +832,7 @@
             document.getElementById('current-category-title').innerText = `${catInfo.icon} ${catInfo.name}`;
 
             applyFilterAndRender(false);
+            toggleSidebar(false);
         }
 
         function triggerFetch() {
