@@ -104,6 +104,7 @@
 
         .source-controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             margin-bottom: 15px;
             padding-bottom: 15px;
@@ -463,8 +464,11 @@
                 <button class="dropbtn" id="dropdown-btn" onclick="toggleDropdown()">Zdroje (Vybraté: 0) ▾</button>
                 <div id="sourcesDropdown" class="dropdown-content">
                     <div class="source-controls">
-                        <button onclick="toggleAllSources(true)">Označiť všetky</button>
-                        <button onclick="toggleAllSources(false)">Zrušiť všetky</button>
+                        <button onclick="toggleAllSources(true)">Všetky</button>
+                        <button onclick="toggleAllSources(false)">Žiadne</button>
+                        <button onclick="toggleAllSources(true, 'Slovensko')">+ SK</button>
+                        <button onclick="toggleAllSources(true, 'Česko')">+ CZ</button>
+                        <button onclick="toggleAllSources(true, 'Svetové (EN)')">+ Svet</button>
                     </div>
                     <div id="sources-list-container"></div>
                 </div>
@@ -677,8 +681,9 @@
             }
         };
 
-        function toggleAllSources(state) {
+        function toggleAllSources(state, group = null) {
             sources.forEach(src => {
+                if (group && src.group !== group) return;
                 const el = document.getElementById(src.id);
                 if (el) el.checked = state;
             });
