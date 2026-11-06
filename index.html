@@ -454,6 +454,54 @@
             text-decoration: underline;
         }
 
+        .grid.compact-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+            gap: 15px;
+        }
+
+        .grid.compact-view .card-content {
+            padding: 12px;
+        }
+
+        .grid.compact-view .card-badge {
+            margin-bottom: 6px;
+            font-size: 0.65rem;
+            padding: 2px 8px;
+        }
+
+        .grid.compact-view .card-title {
+            font-size: 0.92rem;
+            line-height: 1.3;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .grid.compact-view .card-desc {
+            display: none;
+        }
+
+        .grid.compact-view .card-footer {
+            padding-top: 8px;
+            font-size: 0.72rem;
+        }
+
+        @media (max-width: 480px) {
+            .grid.compact-view {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 10px;
+            }
+            .grid.compact-view .card-content {
+                padding: 8px;
+            }
+            .grid.compact-view .card-title {
+                font-size: 0.85rem;
+            }
+        }
+
         .grid.list-view {
             display: flex;
             flex-direction: column;
@@ -719,7 +767,7 @@
         let rawArticlesCache = [];
         let articlesCache = [];
         let fetchController = new AbortController();
-        let isListView = false;
+        let currentViewMode = 'grid';
 
         function initUI() {
             const catMenu = document.getElementById('categories-menu');
@@ -768,10 +816,12 @@
         function loadPreferences() {
             try {
                 const savedView = localStorage.getItem(STORAGE_VIEW_KEY);
-                if (savedView === 'true') {
-                    isListView = true;
-                    document.getElementById('news-grid').classList.add('list-view');
-                    document.getElementById('view-toggle-btn').innerText = '☰ Zoznam';
+                if (savedView === 'compact' || savedView === 'list' || savedView === 'grid') {
+                    setViewMode(savedView);
+                } else if (savedView === 'true') {
+                    setViewMode('list');
+                } else {
+                    setViewMode('grid');
                 }
 
                 const savedSources = localStorage.getItem(STORAGE_SOURCES_KEY);
@@ -800,22 +850,37 @@
             } catch (e) {}
         }
 
-        function toggleView() {
-            isListView = !isListView;
+        function setViewMode(mode) {
+            currentViewMode = mode;
             const grid = document.getElementById('news-grid');
             const btn = document.getElementById('view-toggle-btn');
+            if (!grid || !btn) return;
 
-            if (isListView) {
+            grid.classList.remove('list-view', 'compact-view');
+
+            if (mode === 'compact') {
+                grid.classList.add('compact-view');
+                btn.innerText = '▦ Malá mriežka';
+            } else if (mode === 'list') {
                 grid.classList.add('list-view');
                 btn.innerText = '☰ Zoznam';
             } else {
-                grid.classList.remove('list-view');
                 btn.innerText = '⊞ Mriežka';
             }
 
             try {
-                localStorage.setItem(STORAGE_VIEW_KEY, String(isListView));
+                localStorage.setItem(STORAGE_VIEW_KEY, mode);
             } catch (e) {}
+        }
+
+        function toggleView() {
+            if (currentViewMode === 'grid') {
+                setViewMode('compact');
+            } else if (currentViewMode === 'compact') {
+                setViewMode('list');
+            } else {
+                setViewMode('grid');
+            }
         }
 
         function toggleDropdown() {
