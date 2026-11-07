@@ -926,13 +926,17 @@
                 newArticlesPill: 'Najnovšie správy',
                 ready: 'Pripravené',
                 loading: 'Načítavam',
+                loadingSources: 'Načítavam správy zo zvolených zdrojov...',
                 fastUpdate: 'Blesková aktualizácia',
                 updating: 'Aktualizujem',
+                progressCount: (prefix, done, total) => `${prefix} (${done}/${total})...`,
                 shownCount: (n) => `Zobrazených ${n} správ`,
                 noSource: 'Žiadny zdroj',
                 selectSourceMsg: 'Zaškrtnite aspoň jeden spravodajský zdroj.',
                 blockedMsg: 'Nenašli sa žiadne články. Zvolené weby momentálne blokujú prístup.',
                 noCategoryArticles: (cat) => `Pre túto kategóriu ("${cat}") sa v aktuálne načítaných správach nenašli žiadne články.`,
+                error: 'Chyba',
+                errorMsg: 'Nastala chyba. Skúste obnoviť stránku.',
                 readMore: 'Čítať viac →',
                 locale: 'sk-SK',
                 groups: {
@@ -949,13 +953,17 @@
                 newArticlesPill: 'Latest news',
                 ready: 'Ready',
                 loading: 'Loading',
+                loadingSources: 'Loading news from selected sources...',
                 fastUpdate: 'Fast updating',
                 updating: 'Updating',
+                progressCount: (prefix, done, total) => `${prefix} (${done}/${total})...`,
                 shownCount: (n) => `Showing ${n} articles`,
                 noSource: 'No source',
                 selectSourceMsg: 'Please select at least one news source.',
                 blockedMsg: 'No articles found. Selected websites may be blocking access.',
                 noCategoryArticles: (cat) => `No articles found for category "${cat}" in the current feed.`,
+                error: 'Error',
+                errorMsg: 'An error occurred. Please refresh the page.',
                 readMore: 'Read more →',
                 locale: 'en-US',
                 groups: {
@@ -1081,21 +1089,9 @@
                 if (savedLang === 'sk' || savedLang === 'en') currentLang = savedLang;
             } catch (e) {}
 
-            document.getElementById('lang-btn-sk')?.classList.toggle('active', currentLang === 'sk');
-            document.getElementById('lang-btn-en')?.classList.toggle('active', currentLang === 'en');
-
-            const t = i18n[currentLang];
-            const sbTitle = document.getElementById('sidebar-title');
-            if (sbTitle) sbTitle.innerText = t.sidebarTitle;
-
-            renderCategoriesMenu();
-            renderSourcesList();
             loadPreferences();
             loadCachedArticles();
-            updateDropdownButton();
-            if (rawArticlesCache.length > 0) {
-                applyFilterAndRender(true);
-            }
+            setLanguage(currentLang);
             fetchNews();
         }
 
@@ -1599,14 +1595,15 @@
             const checkedSources = getCheckedSources();
             const grid = document.getElementById('news-grid');
             const status = document.getElementById('status-text');
+            const t = i18n[currentLang];
 
             fetchController.abort();
             fetchController = new AbortController();
             const signal = fetchController.signal;
 
             if (checkedSources.length === 0) {
-                grid.innerHTML = `<div class="empty-state">Zaškrtnite aspoň jeden spravodajský zdroj.</div>`;
-                status.innerText = 'Žiadny zdroj';
+                grid.innerHTML = `<div class="empty-state">${t.selectSourceMsg}</div>`;
+                status.innerText = t.noSource;
                 return;
             }
 
@@ -1617,12 +1614,12 @@
                 grid.innerHTML = `
                     <div class="loader">
                         <div class="spinner"></div>
-                        <div>Načítavam správy zo zvolených zdrojov...</div>
+                        <div>${t.loadingSources}</div>
                     </div>
                 `;
-                status.innerText = `Načítavam (0/${checkedSources.length})...`;
+                status.innerText = t.progressCount(t.loading, 0, checkedSources.length);
             } else {
-                status.innerText = `Blesková aktualizácia (0/${checkedSources.length})...`;
+                status.innerText = t.progressCount(t.fastUpdate, 0, checkedSources.length);
             }
 
             let completedCount = 0;
@@ -1658,16 +1655,16 @@
                                     if (pill) pill.classList.add('show');
                                 }
                                 if (completedCount < checkedSources.length) {
-                                    status.innerText = `Aktualizujem (${completedCount}/${checkedSources.length})...`;
+                                    status.innerText = t.progressCount(t.updating, completedCount, checkedSources.length);
                                 } else {
-                                    status.innerText = `Zobrazených ${articlesCache.length} správ`;
+                                    status.innerText = t.shownCount(articlesCache.length);
                                 }
                             }
                         } else {
                             if (hasVisibleArticles) {
-                                status.innerText = `Aktualizujem (${completedCount}/${checkedSources.length})...`;
+                                status.innerText = t.progressCount(t.updating, completedCount, checkedSources.length);
                             } else {
-                                status.innerText = `Načítavam (${completedCount}/${checkedSources.length})...`;
+                                status.innerText = t.progressCount(t.loading, completedCount, checkedSources.length);
                             }
                         }
                     } catch (e) {
@@ -1683,13 +1680,13 @@
                 if (!signal.aborted && articlesCache.length === 0) {
                     applyFilterAndRender(false, completedCount, checkedSources.length);
                 } else if (!signal.aborted) {
-                    status.innerText = `Zobrazených ${articlesCache.length} správ`;
+                    status.innerText = t.shownCount(articlesCache.length);
                 }
             } catch (e) {
                 if (e.name !== 'AbortError' && !signal.aborted) {
                     if (!hasVisibleArticles) {
-                        grid.innerHTML = `<div class="empty-state">Nastala chyba. Skúste obnoviť stránku.</div>`;
-                        status.innerText = 'Chyba';
+                        grid.innerHTML = `<div class="empty-state">${t.errorMsg}</div>`;
+                        status.innerText = t.error;
                     }
                 }
             }
