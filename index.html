@@ -1283,8 +1283,8 @@
 
         function markAsRead(el) {
             if (!el) return;
-            const link = el.dataset.origUrl || el.getAttribute('href');
-            if (!link || link === '#') return;
+            const link = el.dataset.link || el.getAttribute('href');
+            if (!link || link === '#' || link.startsWith('intent:')) return;
             readArticles.add(link);
             el.classList.add('read');
             try {
@@ -2323,12 +2323,15 @@
                     }
                 }
 
-                const finalHref = isEn
-                    ? `https://translate.google.com/translate?sl=auto&tl=sk&u=${encodeURIComponent(article.link)}`
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const safeUrl = article.link.replace(/^https?:\/\//i, '').replace(/#/g, '%23');
+                const cardHref = isAndroid
+                    ? `intent://${safeUrl}#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;component=com.android.chrome/com.google.android.apps.chrome.Main;end`
                     : article.link;
+                const targetAttrs = isAndroid ? '' : 'target="_blank" rel="noopener noreferrer"';
 
                 return `
-                    <a href="${finalHref}" target="_blank" rel="noopener noreferrer" data-orig-url="${article.link}" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
+                    <a href="${cardHref}" ${targetAttrs} data-link="${article.link}" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
