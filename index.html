@@ -1831,10 +1831,6 @@
                     ? `<span class="card-badge">${article.categories[0]}</span>`
                     : '';
 
-                const imageMarkup = article.image
-                    ? `<img src="${article.image}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="card-img-placeholder" style="display:none;"><span>${article.sourceName}</span></div>`
-                    : `<div class="card-img-placeholder"><span>${article.sourceName}</span></div>`;
-
                 const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
 
                 const imageMarkup = safeImage
