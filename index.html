@@ -2189,10 +2189,31 @@
             });
         }
 
+        function syncReadStatus() {
+            try {
+                const savedRead = localStorage.getItem(STORAGE_READ_KEY);
+                if (savedRead) {
+                    const parsed = JSON.parse(savedRead);
+                    if (Array.isArray(parsed)) readArticles = new Set(parsed);
+                }
+                document.querySelectorAll('.card').forEach(card => {
+                    const link = card.getAttribute('href');
+                    if (link && readArticles.has(link)) {
+                        card.classList.add('read');
+                    }
+                });
+            } catch (e) {}
+        }
+
         initUI();
+
+        window.addEventListener('pageshow', () => {
+            syncReadStatus();
+        });
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
+                syncReadStatus();
                 loadArticles(true);
             }
         });
