@@ -680,7 +680,7 @@
             border: 1px solid var(--border-light);
             color: var(--text-muted);
             border-radius: var(--radius-sm);
-            padding: 2px 7px;
+            padding: 2px 8px;
             font-size: 0.68rem;
             font-weight: 700;
             display: inline-flex;
@@ -690,6 +690,7 @@
             transition: var(--transition-smooth);
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            line-height: 1.2;
         }
 
         .btn-translate:hover {
@@ -2265,13 +2266,12 @@
                             <div class="badges-row">
                                 <span class="card-badge accent">${article.sourceName}</span>
                                 ${categoryBadge}
-                                ${translateBtn}
                             </div>
                             <h3 class="card-title">${article.title}</h3>
                             <p class="card-desc">${article.description}</p>
                             <div class="card-footer">
                                 <span class="card-date">${dateStr} &bull; ${timeStr}</span>
-                                <span class="card-link">${t.readMore}</span>
+                                ${translateBtn}
                             </div>
                         </div>
                     </a>
