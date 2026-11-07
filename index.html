@@ -631,14 +631,26 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            color: var(--text-muted);
-            font-size: 0.82rem;
-            font-weight: 700;
-            text-align: center;
-            padding: 10px;
-            letter-spacing: 0.5px;
+            background: radial-gradient(circle at 50% 50%, #172033 0%, #0a0d16 85%);
             user-select: none;
+        }
+
+        .placeholder-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: rgba(17, 24, 39, 0.9);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 9px;
+            object-fit: contain;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+        }
+
+        .grid.list-view .placeholder-icon {
+            width: 38px;
+            height: 38px;
+            padding: 7px;
+            border-radius: 10px;
         }
 
         .card-content {
@@ -2079,11 +2091,26 @@
                     ? `<span class="card-badge">${article.categories[0]}</span>`
                     : '';
 
+                let hostDomain = '';
+                try {
+                    hostDomain = new URL(article.link).hostname;
+                } catch (e) {}
+
+                const faviconUrl = hostDomain
+                    ? `https://www.google.com/s2/favicons?domain=${hostDomain}&sz=128`
+                    : '';
+
+                const placeholderMarkup = `
+                    <div class="card-img-placeholder">
+                        ${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy">` : ''}
+                    </div>
+                `;
+
                 const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
 
                 const imageMarkup = safeImage
-                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;"><span>${article.sourceName}</span></div>`
-                    : `<div class="card-img-placeholder"><span>${article.sourceName}</span></div>`;
+                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;">${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy">` : ''}</div>`
+                    : placeholderMarkup;
 
                 const isRead = readArticles.has(article.link);
                 const isEn = sources.some(s => s.id === article.sourceId && s.lang === 'en');
