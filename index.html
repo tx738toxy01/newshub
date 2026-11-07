@@ -674,6 +674,41 @@
             border-color: transparent;
         }
 
+        .btn-translate {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            border-radius: var(--radius-sm);
+            padding: 2px 7px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .btn-translate:hover {
+            background: var(--surface-hover);
+            color: var(--text-main);
+            border-color: var(--border-focus);
+        }
+
+        .btn-translate.active {
+            background: var(--accent-soft);
+            color: var(--primary-accent);
+            border-color: var(--primary-accent);
+        }
+
+        .btn-translate.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
         .card-title {
             font-size: 0.94rem;
             font-weight: 700;
@@ -1260,6 +1295,54 @@
                 const arr = Array.from(readArticles).slice(-500);
                 localStorage.setItem(STORAGE_READ_KEY, JSON.stringify(arr));
             } catch (e) {}
+        }
+
+        async function translateTitle(e, btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const card = btn.closest('.card');
+            if (!card) return;
+            const titleEl = card.querySelector('.card-title');
+            if (!titleEl) return;
+
+            if (btn.dataset.translated === 'true') {
+                titleEl.textContent = btn.dataset.originalTitle;
+                btn.dataset.translated = 'false';
+                btn.classList.remove('active');
+                return;
+            }
+
+            if (btn.dataset.cached) {
+                btn.dataset.originalTitle = titleEl.textContent;
+                titleEl.textContent = btn.dataset.cached;
+                btn.dataset.translated = 'true';
+                btn.classList.add('active');
+                return;
+            }
+
+            const origText = titleEl.textContent.trim();
+            btn.dataset.originalTitle = origText;
+            btn.classList.add('loading');
+
+            try {
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=sk&dt=t&q=${encodeURIComponent(origText)}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error();
+                const json = await res.json();
+                let translated = '';
+                if (json && json[0]) {
+                    translated = json[0].map(part => part[0]).join('');
+                }
+                if (translated) {
+                    btn.dataset.cached = translated;
+                    titleEl.textContent = translated;
+                    btn.dataset.translated = 'true';
+                    btn.classList.add('active');
+                }
+            } catch (err) {
+            } finally {
+                btn.classList.remove('loading');
+            }
         }
         const STORAGE_FONT_KEY = 'newshub_font_level';
         const FONT_LEVELS = ['100%', '110%', '120%', '130%'];
@@ -2168,6 +2251,10 @@
                     : `<div class="card-img-placeholder"><span>${article.sourceName}</span></div>`;
 
                 const isRead = readArticles.has(article.link);
+                const isEn = sources.some(s => s.id === article.sourceId && s.lang === 'en');
+                const translateBtn = isEn
+                    ? `<button type="button" class="btn-translate" onclick="translateTitle(event, this)" aria-label="Preložiť do slovenčiny"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>SK</span></button>`
+                    : '';
 
                 return `
                     <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''}">
@@ -2178,6 +2265,7 @@
                             <div class="badges-row">
                                 <span class="card-badge accent">${article.sourceName}</span>
                                 ${categoryBadge}
+                                ${translateBtn}
                             </div>
                             <h3 class="card-title">${article.title}</h3>
                             <p class="card-desc">${article.description}</p>
