@@ -1,0 +1,31 @@
+name: Update News Feed
+
+on:
+  schedule:
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repozitára
+        uses: actions/checkout@v4
+
+      - name: Nastavenie Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Stiahnutie a spracovanie RSS kanálov
+        run: node scripts/fetch-feeds.js
+
+      - name: Uloženie zmeneného feed.json do repozitára
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add feed.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update feed.json [skip ci]" && git push)
