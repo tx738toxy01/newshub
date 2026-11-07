@@ -1293,7 +1293,85 @@
             } catch (e) {}
         }
 
-        async function translateTitle(e, btn) {
+        const STORAGE_TRANS_KEY = 'newshub_title_translations';
+        let translationCache = {};
+
+        try {
+            const savedTrans = localStorage.getItem(STORAGE_TRANS_KEY);
+            if (savedTrans) translationCache = JSON.parse(savedTrans);
+        } catch (e) {}
+
+        function saveTranslationCache() {
+            try {
+                const keys = Object.keys(translationCache);
+                if (keys.length > 600) {
+                    keys.slice(0, keys.length - 600).forEach(k => delete translationCache[k]);
+                }
+                localStorage.setItem(STORAGE_TRANS_KEY, JSON.stringify(translationCache));
+            } catch (e) {}
+        }
+
+        async function requestTranslation(text) {
+            if (translationCache[text]) return translationCache[text];
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=sk&dt=t&q=${encodeURIComponent(text)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error();
+            const json = await res.json();
+            if (json && json[0]) {
+                const trans = json[0].map(p => p[0]).join('');
+                if (trans) {
+                    translationCache[text] = trans;
+                    saveTranslationCache();
+                    return trans;
+                }
+            }
+            return text;
+        }
+
+        function applyTranslatedState(card, titleEl, btn, transText) {
+            card.dataset.transTitle = transText;
+            titleEl.textContent = transText;
+            btn.classList.remove('loading');
+            btn.classList.add('active');
+            const span = btn.querySelector('span');
+            if (span) span.textContent = 'EN';
+            btn.setAttribute('aria-label', 'Zobraziť originál v angličtine');
+            btn.title = 'Zobraziť originál v angličtine';
+        }
+
+        const autoTranslateObserver = new IntersectionObserver((entries) => {
+            entries.forEach(async (entry) => {
+                if (!entry.isIntersecting) return;
+                const card = entry.target;
+                autoTranslateObserver.unobserve(card);
+
+                const btn = card.querySelector('.btn-translate');
+                const titleEl = card.querySelector('.card-title');
+                const origText = card.dataset.origTitle;
+                if (!origText || !titleEl || !btn) return;
+
+                if (translationCache[origText]) {
+                    applyTranslatedState(card, titleEl, btn, translationCache[origText]);
+                    return;
+                }
+
+                btn.classList.add('loading');
+                try {
+                    const trans = await requestTranslation(origText);
+                    if (trans && trans !== origText) {
+                        applyTranslatedState(card, titleEl, btn, trans);
+                    } else {
+                        btn.classList.remove('loading');
+                    }
+                } catch (err) {
+                    btn.classList.remove('loading');
+                    const span = btn.querySelector('span');
+                    if (span) span.textContent = 'SK';
+                }
+            });
+        }, { rootMargin: '300px 0px' });
+
+        function toggleTranslation(e, btn) {
             e.preventDefault();
             e.stopPropagation();
             const card = btn.closest('.card');
@@ -1301,43 +1379,20 @@
             const titleEl = card.querySelector('.card-title');
             if (!titleEl) return;
 
-            if (btn.dataset.translated === 'true') {
-                titleEl.textContent = btn.dataset.originalTitle;
-                btn.dataset.translated = 'false';
+            const orig = card.dataset.origTitle;
+            const trans = card.dataset.transTitle || translationCache[orig];
+
+            if (btn.classList.contains('active')) {
+                titleEl.textContent = orig;
                 btn.classList.remove('active');
-                return;
-            }
-
-            if (btn.dataset.cached) {
-                btn.dataset.originalTitle = titleEl.textContent;
-                titleEl.textContent = btn.dataset.cached;
-                btn.dataset.translated = 'true';
-                btn.classList.add('active');
-                return;
-            }
-
-            const origText = titleEl.textContent.trim();
-            btn.dataset.originalTitle = origText;
-            btn.classList.add('loading');
-
-            try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=sk&dt=t&q=${encodeURIComponent(origText)}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error();
-                const json = await res.json();
-                let translated = '';
-                if (json && json[0]) {
-                    translated = json[0].map(part => part[0]).join('');
-                }
-                if (translated) {
-                    btn.dataset.cached = translated;
-                    titleEl.textContent = translated;
-                    btn.dataset.translated = 'true';
-                    btn.classList.add('active');
-                }
-            } catch (err) {
-            } finally {
-                btn.classList.remove('loading');
+                const span = btn.querySelector('span');
+                if (span) span.textContent = 'SK';
+                btn.setAttribute('aria-label', 'Preložiť do slovenčiny');
+                btn.title = 'Preložiť do slovenčiny';
+            } else if (trans) {
+                applyTranslatedState(card, titleEl, btn, trans);
+            } else {
+                autoTranslateObserver.observe(card);
             }
         }
         const STORAGE_FONT_KEY = 'newshub_font_level';
@@ -2248,12 +2303,28 @@
 
                 const isRead = readArticles.has(article.link);
                 const isEn = sources.some(s => s.id === article.sourceId && s.lang === 'en');
-                const translateBtn = isEn
-                    ? `<button type="button" class="btn-translate" onclick="translateTitle(event, this)" aria-label="Preložiť do slovenčiny"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>SK</span></button>`
-                    : '';
+
+                let titleToDisplay = article.title;
+                let translateBtn = '';
+                let extraCardClass = '';
+                let extraDataAttrs = '';
+
+                if (isEn) {
+                    const safeOrigTitle = article.title.replace(/"/g, '&quot;');
+                    const cachedTrans = translationCache[article.title];
+                    if (cachedTrans) {
+                        titleToDisplay = cachedTrans;
+                        extraDataAttrs = `data-orig-title="${safeOrigTitle}" data-trans-title="${cachedTrans.replace(/"/g, '&quot;')}"`;
+                        translateBtn = `<button type="button" class="btn-translate active" onclick="toggleTranslation(event, this)" title="Zobraziť originál v angličtine" aria-label="Zobraziť originál v angličtine"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>EN</span></button>`;
+                    } else {
+                        extraCardClass = 'needs-auto-trans';
+                        extraDataAttrs = `data-orig-title="${safeOrigTitle}"`;
+                        translateBtn = `<button type="button" class="btn-translate loading" onclick="toggleTranslation(event, this)" title="Prekladá sa..." aria-label="Prekladá sa..."><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>...</span></button>`;
+                    }
+                }
 
                 return `
-                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''}">
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
@@ -2262,7 +2333,7 @@
                                 <span class="card-badge accent">${article.sourceName}</span>
                                 ${categoryBadge}
                             </div>
-                            <h3 class="card-title">${article.title}</h3>
+                            <h3 class="card-title">${titleToDisplay}</h3>
                             <p class="card-desc">${article.description}</p>
                             <div class="card-footer">
                                 <span class="card-date">${dateStr} &bull; ${timeStr}</span>
@@ -2272,6 +2343,10 @@
                     </a>
                 `;
             }).join('');
+
+            document.querySelectorAll('.needs-auto-trans').forEach(card => {
+                autoTranslateObserver.observe(card);
+            });
         }
 
         initUI();
