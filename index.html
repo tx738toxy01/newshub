@@ -1281,24 +1281,16 @@
             }
         } catch (e) {}
 
-        function handleArticleClick(e, el) {
+        function markAsRead(el) {
             if (!el) return;
-            const link = el.getAttribute('href');
-            if (!link || link === '#') return;
-
+            const link = el.dataset.link || el.getAttribute('href');
+            if (!link || link === '#' || link.startsWith('intent:')) return;
             readArticles.add(link);
             el.classList.add('read');
             try {
                 const arr = Array.from(readArticles).slice(-500);
                 localStorage.setItem(STORAGE_READ_KEY, JSON.stringify(arr));
-            } catch (err) {}
-
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            if (isAndroid) {
-                e.preventDefault();
-                const cleanUrl = link.replace(/^https?:\/\//i, '');
-                window.location.href = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(link)};end`;
-            }
+            } catch (e) {}
         }
 
         const STORAGE_TRANS_KEY = 'newshub_title_translations';
@@ -2331,8 +2323,15 @@
                     }
                 }
 
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                const safeUrl = article.link.replace(/^https?:\/\//i, '').replace(/#/g, '%23');
+                const cardHref = isAndroid
+                    ? `intent://${safeUrl}#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;component=com.android.chrome/com.google.android.apps.chrome.Main;end`
+                    : article.link;
+                const targetAttrs = isAndroid ? '' : 'target="_blank" rel="noopener noreferrer"';
+
                 return `
-                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="handleArticleClick(event, this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
+                    <a href="${cardHref}" ${targetAttrs} data-link="${article.link}" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
