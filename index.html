@@ -723,6 +723,13 @@
             transition: color 0.15s;
         }
 
+        .card-title.expanded,
+        .grid.list-view .card-title.expanded {
+            display: block;
+            -webkit-line-clamp: unset;
+            overflow: visible;
+        }
+
         @media (hover: hover) and (pointer: fine) {
             .card:hover .card-title {
                 color: var(--primary-accent);
@@ -1298,6 +1305,18 @@
             } catch (e) {}
         }
 
+        const expandedObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    const titleEl = entry.target.querySelector('.card-title.expanded');
+                    if (titleEl) {
+                        titleEl.classList.remove('expanded');
+                    }
+                    expandedObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0 });
+
         async function translateTitle(e, btn) {
             e.preventDefault();
             e.stopPropagation();
@@ -1308,6 +1327,8 @@
 
             if (btn.dataset.translated === 'true') {
                 titleEl.textContent = btn.dataset.originalTitle;
+                titleEl.classList.remove('expanded');
+                expandedObserver.unobserve(card);
                 btn.dataset.translated = 'false';
                 btn.classList.remove('active');
                 return;
@@ -1316,6 +1337,8 @@
             if (btn.dataset.cached) {
                 btn.dataset.originalTitle = titleEl.textContent;
                 titleEl.textContent = btn.dataset.cached;
+                titleEl.classList.add('expanded');
+                expandedObserver.observe(card);
                 btn.dataset.translated = 'true';
                 btn.classList.add('active');
                 return;
@@ -1337,6 +1360,8 @@
                 if (translated) {
                     btn.dataset.cached = translated;
                     titleEl.textContent = translated;
+                    titleEl.classList.add('expanded');
+                    expandedObserver.observe(card);
                     btn.dataset.translated = 'true';
                     btn.classList.add('active');
                 }
