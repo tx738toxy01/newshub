@@ -631,54 +631,55 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #0b0f19;
+            background: #080c14;
             overflow: hidden;
             user-select: none;
         }
 
         .placeholder-ambient {
             position: absolute;
-            inset: -25%;
-            width: 150%;
-            height: 150%;
+            inset: -30%;
+            width: 160%;
+            height: 160%;
             object-fit: cover;
-            filter: blur(30px) saturate(190%) brightness(0.65);
-            opacity: 0.5;
+            filter: blur(32px) saturate(220%) brightness(0.7);
+            opacity: 0.6;
             pointer-events: none;
         }
 
         .placeholder-icon-wrap {
             position: relative;
             z-index: 2;
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
-            background: rgba(15, 23, 42, 0.72);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.18);
+            width: 96px;
+            height: 96px;
+            border-radius: 24px;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1.5px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.7), 0 0 20px rgba(59, 130, 246, 0.15);
+            box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.8), 0 0 25px rgba(59, 130, 246, 0.2);
         }
 
         .placeholder-icon {
-            width: 40px;
-            height: 40px;
+            width: 70px;
+            height: 70px;
             object-fit: contain;
-            border-radius: 8px;
-        }
-
-        .grid.list-view .placeholder-icon-wrap {
-            width: 48px;
-            height: 48px;
             border-radius: 14px;
         }
 
+        .grid.list-view .placeholder-icon-wrap {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+        }
+
         .grid.list-view .placeholder-icon {
-            width: 30px;
-            height: 30px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
         }
 
         .card-content {
@@ -2128,12 +2129,17 @@
                     ? `https://www.google.com/s2/favicons?domain=${hostDomain}&sz=128`
                     : '';
 
-                const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
-                const finalImgSrc = safeImage || faviconUrl;
+                const placeholderMarkup = `
+                    <div class="card-img-placeholder">
+                        ${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-ambient" loading="lazy"><div class="placeholder-icon-wrap"><img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy"></div>` : ''}
+                    </div>
+                `;
 
-                const imageMarkup = finalImgSrc
-                    ? `<img src="${finalImgSrc}" data-orig="${finalImgSrc}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried && '${safeImage}'){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else if('${faviconUrl}' && this.src!=='${faviconUrl}'){this.src='${faviconUrl}';}else{this.style.display='none';}">`
-                    : '';
+                const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
+
+                const imageMarkup = safeImage
+                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;">${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-ambient" loading="lazy"><div class="placeholder-icon-wrap"><img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy"></div>` : ''}</div>`
+                    : placeholderMarkup;
 
                 const isRead = readArticles.has(article.link);
                 const isEn = sources.some(s => s.id === article.sourceId && s.lang === 'en');
