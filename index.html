@@ -318,6 +318,38 @@
             margin-bottom: 24px;
             padding-bottom: 14px;
             border-bottom: 1px solid var(--border-light);
+            gap: 10px;
+        }
+
+        .lang-switch {
+            display: inline-flex;
+            background: var(--bg-page);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-full);
+            padding: 2px;
+            gap: 2px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .lang-btn:hover {
+            color: var(--text-main);
+        }
+
+        .lang-btn.active {
+            background: var(--primary-accent);
+            color: white;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
         }
 
         .sidebar-title {
@@ -742,7 +774,11 @@
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeAllSidebars()"></div>
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <div class="sidebar-title">Sekcie správ</div>
+            <div class="sidebar-title" id="sidebar-title">Sekcie správ</div>
+            <div class="lang-switch">
+                <button class="lang-btn" id="lang-btn-sk" onclick="setLanguage('sk')">SK</button>
+                <button class="lang-btn" id="lang-btn-en" onclick="setLanguage('en')">EN</button>
+            </div>
             <button class="sidebar-close" onclick="toggleSidebar(false)">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -795,16 +831,16 @@
         const STORAGE_ARTICLES_KEY = 'newshub_cached_articles';
 
         const categories = [
-            { id: 'all', name: 'Najnovšie', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>', tags: [] },
-            { id: 'domov', name: 'Domáce', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>', tags: ['slovensko', 'domov', 'domáce', 'politika', 'z domova', 'regióny', 'komentáre', 'spoločnosť', 'domácí', 'česko', 'zprávy z domova', 'vlád', 'parlament', 'minister', 'prezident', 'bratislav', 'košic', 'politics', 'national'] },
-            { id: 'svet', name: 'Zahraničie', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>', tags: ['svet', 'zahraničie', 'ukrajina', 'zo sveta', 'zahraničná politika', 'zahraničí', 'svět', 'ze světa', 'rusko', 'usa', 'európ', 'eú', 'nato', 'world', 'international', 'europe', 'global', 'foreign'] },
-            { id: 'ekonomika', name: 'Ekonomika', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>', tags: ['ekonomika', 'financie', 'biznis', 'peniaze', 'hospodárstvo', 'byznys', 'finance', 'ekonomické', 'bank', 'infláci', 'invest', ' trh', 'ceny', 'daň', 'dane', 'business', 'economy', 'markets', 'money', 'financial'] },
-            { id: 'sport', name: 'Šport', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 4H6v7a6 6 0 0 0 12 0V4z"></path></svg>', tags: ['šport', 'sport', 'futbal', 'hokej', 'tenis', 'cyklistika', 'nhl', 'športové', 'fotbal', 'zápas', 'turnaj', 'majstrovstvá', 'liga', 'gól', 'sports', 'football', 'soccer', 'tennis'] },
-            { id: 'tech', name: 'Technológie', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>', tags: ['tech', 'technológie', 'veda', 'vesmír', 'it', 'počítače', 'veda a technika', 'mobil', 'technologie', 'věda', 'smartfón', 'aplikáci', 'internet', 'umelá inteligencia', 'technology', 'science', 'space', 'ai', 'digital', 'gadgets', 'software', 'apple', 'google', 'microsoft'] },
-            { id: 'kultura', name: 'Kultúra', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>', tags: ['kultúra', 'umenie', 'film', 'hudba', 'šoubiznis', 'televízia', 'kultura', 'umění', 'divadlo', 'koncert', 'herec', 'spevák', 'knih', 'culture', 'arts', 'entertainment', 'music', 'movies', 'books', 'tv'] },
-            { id: 'zdravie', name: 'Zdravie', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>', tags: ['zdravie', 'medicína', 'životný štýl', 'rodina', 'fitness', 'zdraví', 'životní styl', 'lekár', 'nemocnic', 'pacient', 'chorob', 'liečb', 'health', 'medicine', 'lifestyle', 'wellness', 'medical'] },
-            { id: 'krimi', name: 'Krimi', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>', tags: ['krimi', 'polícia', 'súd', 'krimi a nehody', 'zločin', 'policie', 'soud', 'nehody', 'nehoda', 'obvinen', 'väzen', 'vražd', 'krádež', 'hasič', 'crime', 'police', 'court', 'justice', 'law'] },
-            { id: 'auto', name: 'Auto-Moto', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>', tags: ['auto', 'moto', 'auto-moto', 'doprava', 'automobilky', 'auta', 'automobily', 'vodič', 'diaľnic', 'elektromobil', 'cars', 'automotive', 'transport', 'vehicles', 'ev'] }
+            { id: 'all', name: { sk: 'Najnovšie', en: 'Latest' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>', tags: [] },
+            { id: 'domov', name: { sk: 'Domáce', en: 'National' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>', tags: ['slovensko', 'domov', 'domáce', 'politika', 'z domova', 'regióny', 'komentáre', 'spoločnosť', 'domácí', 'česko', 'zprávy z domova', 'vlád', 'parlament', 'minister', 'prezident', 'bratislav', 'košic', 'politics', 'national'] },
+            { id: 'svet', name: { sk: 'Zahraničie', en: 'World' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>', tags: ['svet', 'zahraničie', 'ukrajina', 'zo sveta', 'zahraničná politika', 'zahraničí', 'svět', 'ze světa', 'rusko', 'usa', 'európ', 'eú', 'nato', 'world', 'international', 'europe', 'global', 'foreign'] },
+            { id: 'ekonomika', name: { sk: 'Ekonomika', en: 'Economy' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>', tags: ['ekonomika', 'financie', 'biznis', 'peniaze', 'hospodárstvo', 'byznys', 'finance', 'ekonomické', 'bank', 'infláci', 'invest', ' trh', 'ceny', 'daň', 'dane', 'business', 'economy', 'markets', 'money', 'financial'] },
+            { id: 'sport', name: { sk: 'Šport', en: 'Sports' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M18 4H6v7a6 6 0 0 0 12 0V4z"></path></svg>', tags: ['šport', 'sport', 'futbal', 'hokej', 'tenis', 'cyklistika', 'nhl', 'športové', 'fotbal', 'zápas', 'turnaj', 'majstrovstvá', 'liga', 'gól', 'sports', 'football', 'soccer', 'tennis'] },
+            { id: 'tech', name: { sk: 'Technológie', en: 'Tech' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>', tags: ['tech', 'technológie', 'veda', 'vesmír', 'it', 'počítače', 'veda a technika', 'mobil', 'technologie', 'věda', 'smartfón', 'aplikáci', 'internet', 'umelá inteligencia', 'technology', 'science', 'space', 'ai', 'digital', 'gadgets', 'software', 'apple', 'google', 'microsoft'] },
+            { id: 'kultura', name: { sk: 'Kultúra', en: 'Culture' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect><line x1="7" y1="2" x2="7" y2="22"></line><line x1="17" y1="2" x2="17" y2="22"></line><line x1="2" y1="12" x2="22" y2="12"></line><line x1="2" y1="7" x2="7" y2="7"></line><line x1="2" y1="17" x2="7" y2="17"></line><line x1="17" y1="17" x2="22" y2="17"></line><line x1="17" y1="7" x2="22" y2="7"></line></svg>', tags: ['kultúra', 'umenie', 'film', 'hudba', 'šoubiznis', 'televízia', 'kultura', 'umění', 'divadlo', 'koncert', 'herec', 'spevák', 'knih', 'culture', 'arts', 'entertainment', 'music', 'movies', 'books', 'tv'] },
+            { id: 'zdravie', name: { sk: 'Zdravie', en: 'Health' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>', tags: ['zdravie', 'medicína', 'životný štýl', 'rodina', 'fitness', 'zdraví', 'životní styl', 'lekár', 'nemocnic', 'pacient', 'chorob', 'liečb', 'health', 'medicine', 'lifestyle', 'wellness', 'medical'] },
+            { id: 'krimi', name: { sk: 'Krimi', en: 'Crime' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>', tags: ['krimi', 'polícia', 'súd', 'krimi a nehody', 'zločin', 'policie', 'soud', 'nehody', 'nehoda', 'obvinen', 'väzen', 'vražd', 'krádež', 'hasič', 'crime', 'police', 'court', 'justice', 'law'] },
+            { id: 'auto', name: { sk: 'Auto-Moto', en: 'Auto' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"></path><circle cx="7" cy="17" r="2"></circle><path d="M9 17h6"></path><circle cx="17" cy="17" r="2"></circle></svg>', tags: ['auto', 'moto', 'auto-moto', 'doprava', 'automobilky', 'auta', 'automobily', 'vodič', 'diaľnic', 'elektromobil', 'cars', 'automotive', 'transport', 'vehicles', 'ev'] }
         ];
 
         const sources = [
@@ -877,6 +913,146 @@
         let articlesCache = [];
         let fetchController = new AbortController();
         let currentViewMode = 'grid';
+        let currentLang = 'sk';
+
+        const STORAGE_LANG_KEY = 'newshub_lang';
+
+        const i18n = {
+            sk: {
+                sidebarTitle: 'Sekcie správ',
+                sourcesTitle: 'Zdroje správ',
+                selectAll: 'Označiť všetky',
+                deselectAll: 'Zrušiť všetky',
+                newArticlesPill: 'Najnovšie správy',
+                ready: 'Pripravené',
+                loading: 'Načítavam',
+                fastUpdate: 'Blesková aktualizácia',
+                updating: 'Aktualizujem',
+                shownCount: (n) => `Zobrazených ${n} správ`,
+                noSource: 'Žiadny zdroj',
+                selectSourceMsg: 'Zaškrtnite aspoň jeden spravodajský zdroj.',
+                blockedMsg: 'Nenašli sa žiadne články. Zvolené weby momentálne blokujú prístup.',
+                noCategoryArticles: (cat) => `Pre túto kategóriu ("${cat}") sa v aktuálne načítaných správach nenašli žiadne články.`,
+                readMore: 'Čítať viac →',
+                locale: 'sk-SK',
+                groups: {
+                    'Slovensko': 'Slovensko',
+                    'Česko': 'Česko',
+                    'Svetové (EN)': 'Svetové (EN)'
+                }
+            },
+            en: {
+                sidebarTitle: 'Categories',
+                sourcesTitle: 'News Sources',
+                selectAll: 'Select all',
+                deselectAll: 'Deselect all',
+                newArticlesPill: 'Latest news',
+                ready: 'Ready',
+                loading: 'Loading',
+                fastUpdate: 'Fast updating',
+                updating: 'Updating',
+                shownCount: (n) => `Showing ${n} articles`,
+                noSource: 'No source',
+                selectSourceMsg: 'Please select at least one news source.',
+                blockedMsg: 'No articles found. Selected websites may be blocking access.',
+                noCategoryArticles: (cat) => `No articles found for category "${cat}" in the current feed.`,
+                readMore: 'Read more →',
+                locale: 'en-US',
+                groups: {
+                    'Slovensko': 'Slovakia',
+                    'Česko': 'Czechia',
+                    'Svetové (EN)': 'World (EN)'
+                }
+            }
+        };
+
+        function setLanguage(lang) {
+            currentLang = lang === 'en' ? 'en' : 'sk';
+            try {
+                localStorage.setItem(STORAGE_LANG_KEY, currentLang);
+            } catch (e) {}
+
+            document.getElementById('lang-btn-sk')?.classList.toggle('active', currentLang === 'sk');
+            document.getElementById('lang-btn-en')?.classList.toggle('active', currentLang === 'en');
+
+            const t = i18n[currentLang];
+            const sbTitle = document.getElementById('sidebar-title');
+            if (sbTitle) sbTitle.innerText = t.sidebarTitle;
+
+            const pillBtn = document.getElementById('new-articles-pill');
+            if (pillBtn) {
+                pillBtn.innerHTML = `
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                    <span>${t.newArticlesPill}</span>
+                `;
+            }
+
+            renderCategoriesMenu();
+            renderSourcesList();
+            updateDropdownButton();
+
+            const catInfo = categories.find(c => c.id === activeCategory);
+            const catName = catInfo ? catInfo.name[currentLang] : '';
+            document.getElementById('current-category-title').innerHTML = `${catInfo.icon} <span>${catName}</span>`;
+
+            applyFilterAndRender(false);
+        }
+
+        function renderCategoriesMenu() {
+            const catMenu = document.getElementById('categories-menu');
+            if (!catMenu) return;
+            catMenu.innerHTML = '';
+            categories.forEach(cat => {
+                const li = document.createElement('li');
+                li.id = `cat-${cat.id}`;
+                li.innerHTML = `${cat.icon} <span>${cat.name[currentLang]}</span>`;
+                if (cat.id === activeCategory) li.classList.add('active');
+                li.onclick = () => selectCategory(cat.id);
+                catMenu.appendChild(li);
+            });
+        }
+
+        function renderSourcesList() {
+            const srcContainer = document.getElementById('sources-list-container');
+            if (!srcContainer) return;
+            const t = i18n[currentLang];
+            const checkedIds = new Set(getCheckedSources().map(s => s.id));
+            srcContainer.innerHTML = '';
+
+            const groups = [...new Set(sources.map(s => s.group))];
+            groups.forEach(groupName => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'source-group';
+                const localizedGroupName = t.groups[groupName] || groupName;
+                groupDiv.innerHTML = `
+                    <div class="group-title">
+                        <label>
+                            <input type="checkbox" id="group-cb-${groupName}" onchange="toggleGroup('${groupName}', this.checked)">
+                            <span>${localizedGroupName}</span>
+                        </label>
+                    </div>
+                `;
+
+                sources.filter(s => s.group === groupName).forEach(src => {
+                    const isChecked = checkedIds.has(src.id);
+                    const label = document.createElement('label');
+                    label.className = 'source-item';
+                    label.innerHTML = `<input type="checkbox" id="${src.id}" value="${src.id}" ${isChecked ? 'checked' : ''} onchange="triggerFetch()"> <span>${src.name}</span>`;
+                    groupDiv.appendChild(label);
+                });
+                srcContainer.appendChild(groupDiv);
+            });
+
+            const sourceControls = document.querySelector('.source-controls');
+            if (sourceControls) {
+                sourceControls.innerHTML = `
+                    <button onclick="toggleAllSources(true)">${t.selectAll}</button>
+                    <button onclick="toggleAllSources(false)">${t.deselectAll}</button>
+                `;
+            }
+        }
 
         function loadCachedArticles() {
             try {
@@ -900,40 +1076,20 @@
         }
 
         function initUI() {
-            const catMenu = document.getElementById('categories-menu');
-            categories.forEach(cat => {
-                const li = document.createElement('li');
-                li.id = `cat-${cat.id}`;
-                li.innerHTML = `<span>${cat.icon}</span> ${cat.name}`;
-                if (cat.id === activeCategory) li.classList.add('active');
-                li.onclick = () => selectCategory(cat.id);
-                catMenu.appendChild(li);
-            });
+            try {
+                const savedLang = localStorage.getItem(STORAGE_LANG_KEY);
+                if (savedLang === 'sk' || savedLang === 'en') currentLang = savedLang;
+            } catch (e) {}
 
-            const srcContainer = document.getElementById('sources-list-container');
-            const groups = [...new Set(sources.map(s => s.group))];
+            document.getElementById('lang-btn-sk')?.classList.toggle('active', currentLang === 'sk');
+            document.getElementById('lang-btn-en')?.classList.toggle('active', currentLang === 'en');
 
-            groups.forEach(groupName => {
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'source-group';
-                groupDiv.innerHTML = `
-                    <div class="group-title">
-                        <label>
-                            <input type="checkbox" id="group-cb-${groupName}" onchange="toggleGroup('${groupName}', this.checked)">
-                            <span>${groupName}</span>
-                        </label>
-                    </div>
-                `;
+            const t = i18n[currentLang];
+            const sbTitle = document.getElementById('sidebar-title');
+            if (sbTitle) sbTitle.innerText = t.sidebarTitle;
 
-                sources.filter(s => s.group === groupName).forEach(src => {
-                    const label = document.createElement('label');
-                    label.className = 'source-item';
-                    label.innerHTML = `<input type="checkbox" id="${src.id}" value="${src.id}" onchange="triggerFetch()"> <span>${src.name}</span>`;
-                    groupDiv.appendChild(label);
-                });
-                srcContainer.appendChild(groupDiv);
-            });
-
+            renderCategoriesMenu();
+            renderSourcesList();
             loadPreferences();
             loadCachedArticles();
             updateDropdownButton();
@@ -1091,8 +1247,9 @@
         function updateDropdownButton() {
             const checkedCount = getCheckedSources().length;
             const titleEl = document.getElementById('sources-sidebar-title');
+            const t = i18n[currentLang];
             if (titleEl) {
-                titleEl.innerText = `Zdroje správ (${checkedCount})`;
+                titleEl.innerText = `${t.sourcesTitle} (${checkedCount})`;
             }
             updateGroupCheckboxes();
         }
@@ -1116,11 +1273,12 @@
             if (pill) pill.classList.remove('show');
 
             document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
-            document.getElementById(`cat-${catId}`).classList.add('active');
+            document.getElementById(`cat-${catId}`)?.classList.add('active');
             activeCategory = catId;
 
             const catInfo = categories.find(c => c.id === catId);
-            document.getElementById('current-category-title').innerHTML = `${catInfo.icon} <span>${catInfo.name}</span>`;
+            const catName = catInfo ? catInfo.name[currentLang] : '';
+            document.getElementById('current-category-title').innerHTML = `${catInfo.icon} <span>${catName}</span>`;
 
             applyFilterAndRender(false);
             toggleSidebar(false);
@@ -1573,10 +1731,11 @@
             const grid = document.getElementById('news-grid');
             const status = document.getElementById('status-text');
             const checkedSources = getCheckedSources();
+            const t = i18n[currentLang];
 
             if (checkedSources.length === 0) {
-                grid.innerHTML = `<div class="empty-state">Zaškrtnite aspoň jeden spravodajský zdroj.</div>`;
-                status.innerText = 'Žiadny zdroj';
+                grid.innerHTML = `<div class="empty-state">${t.selectSourceMsg}</div>`;
+                status.innerText = t.noSource;
                 return;
             }
 
@@ -1585,8 +1744,8 @@
 
             if (validArticles.length === 0) {
                 if (!isStillLoading) {
-                    grid.innerHTML = `<div class="empty-state">Nenašli sa žiadne články. Zvolené weby momentálne blokujú prístup.</div>`;
-                    status.innerText = 'Chyba spojenia so zdrojmi';
+                    grid.innerHTML = `<div class="empty-state">${t.blockedMsg}</div>`;
+                    status.innerText = t.noSource;
                 }
                 return;
             }
@@ -1595,9 +1754,10 @@
 
             if (filteredArticles.length === 0 && activeCategory !== 'all') {
                 const catInfo = categories.find(c => c.id === activeCategory);
+                const catName = catInfo ? catInfo.name[currentLang] : '';
                 if (!isStillLoading) {
-                    grid.innerHTML = `<div class="empty-state">Pre túto kategóriu ("${catInfo ? catInfo.name : ''}") sa v aktuálne načítaných správach nenašli žiadne články.</div>`;
-                    status.innerText = 'Načítaných 0 správ';
+                    grid.innerHTML = `<div class="empty-state">${t.noCategoryArticles(catName)}</div>`;
+                    status.innerText = t.shownCount(0);
                 }
                 articlesCache = [];
                 return;
@@ -1605,9 +1765,9 @@
 
             articlesCache = filteredArticles.slice(0, 100);
             if (isStillLoading) {
-                status.innerText = `Aktualizujem (${completed}/${total}) • Zobrazených ${articlesCache.length} správ`;
+                status.innerText = `${t.updating} (${completed}/${total}) • ${t.shownCount(articlesCache.length)}`;
             } else {
-                status.innerText = `Zobrazených ${articlesCache.length} správ`;
+                status.innerText = t.shownCount(articlesCache.length);
             }
             renderArticles();
         }
@@ -1619,10 +1779,12 @@
                 return;
             }
 
+            const t = i18n[currentLang];
+
             grid.innerHTML = articlesCache.map(article => {
                 const dateObj = isNaN(article.pubDate) ? new Date() : article.pubDate;
-                const dateStr = dateObj.toLocaleDateString('sk-SK');
-                const timeStr = dateObj.toLocaleTimeString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = dateObj.toLocaleDateString(t.locale);
+                const timeStr = dateObj.toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' });
 
                 const categoryBadge = article.categories.length > 0
                     ? `<span class="card-badge">${article.categories[0]}</span>`
@@ -1642,7 +1804,7 @@
                             <p class="card-desc">${article.description}</p>
                             <div class="card-footer">
                                 <span class="card-date">${dateStr} &bull; ${timeStr}</span>
-                                <span class="card-link">Čítať viac &rarr;</span>
+                                <span class="card-link">${t.readMore}</span>
                             </div>
                         </div>
                     </a>
