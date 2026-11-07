@@ -1022,11 +1022,27 @@
             });
         }
 
+        function getSavedSourceIds() {
+            try {
+                const saved = localStorage.getItem(STORAGE_SOURCES_KEY);
+                if (saved !== null) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        return new Set(parsed);
+                    }
+                }
+            } catch (e) {}
+            return new Set(['sk_1', 'sk_2', 'sk_3']);
+        }
+
         function renderSourcesList() {
             const srcContainer = document.getElementById('sources-list-container');
             if (!srcContainer) return;
             const t = i18n[currentLang];
-            const checkedIds = new Set(getCheckedSources().map(s => s.id));
+            const hasExisting = srcContainer.querySelectorAll('input[type="checkbox"]').length > 0;
+            const checkedIds = hasExisting
+                ? new Set(getCheckedSources().map(s => s.id))
+                : getSavedSourceIds();
             srcContainer.innerHTML = '';
 
             const groups = [...new Set(sources.map(s => s.group))];
@@ -1103,24 +1119,7 @@
                 } else {
                     setViewMode('grid');
                 }
-
-                const savedSources = localStorage.getItem(STORAGE_SOURCES_KEY);
-                if (savedSources !== null) {
-                    const parsedIds = JSON.parse(savedSources);
-                    if (Array.isArray(parsedIds) && parsedIds.length > 0) {
-                        sources.forEach(src => {
-                            const el = document.getElementById(src.id);
-                            if (el) el.checked = parsedIds.includes(src.id);
-                        });
-                        return;
-                    }
-                }
             } catch (e) {}
-
-            ['sk_1', 'sk_2', 'sk_3'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.checked = true;
-            });
         }
 
         function saveSelectedSources() {
