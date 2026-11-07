@@ -916,6 +916,7 @@
         let currentLang = 'sk';
 
         const STORAGE_LANG_KEY = 'newshub_lang';
+        const STORAGE_CAT_KEY = 'newshub_category';
 
         const i18n = {
             sk: {
@@ -1105,6 +1106,13 @@
                 if (savedLang === 'sk' || savedLang === 'en') currentLang = savedLang;
             } catch (e) {}
 
+            try {
+                const savedCat = localStorage.getItem(STORAGE_CAT_KEY);
+                if (savedCat && categories.some(c => c.id === savedCat)) {
+                    activeCategory = savedCat;
+                }
+            } catch (e) {}
+
             loadPreferences();
             loadCachedArticles();
             setLanguage(currentLang);
@@ -1270,6 +1278,10 @@
             document.querySelectorAll('.menu li').forEach(li => li.classList.remove('active'));
             document.getElementById(`cat-${catId}`)?.classList.add('active');
             activeCategory = catId;
+
+            try {
+                localStorage.setItem(STORAGE_CAT_KEY, catId);
+            } catch (e) {}
 
             const catInfo = categories.find(c => c.id === catId);
             const catName = catInfo ? catInfo.name[currentLang] : '';
