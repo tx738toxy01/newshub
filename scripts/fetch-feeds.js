@@ -416,7 +416,7 @@ async function run() {
   const uniqueArticles = Array.from(map.values())
     .filter(a => !isNaN(a.pubDate))
     .sort((a, b) => b.pubDate - a.pubDate)
-    .slice(0, 400);
+    .slice(0, 10000);
 
   const payload = {
     updatedAt: Date.now(),
