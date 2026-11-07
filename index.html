@@ -1764,29 +1764,21 @@
             let validArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
             if (validArticles.length === 0) return [];
 
-            const catInfo = categories.find(c => c.id === activeCategory);
-            if (activeCategory !== 'all' && catInfo && catInfo.tags.length > 0) {
-                return validArticles.filter(article => {
-                    if (article.sourceDefaultCats && article.sourceDefaultCats.includes(activeCategory)) {
-                        return true;
-                    }
-
-                    const articleCats = (article.categories || []).join(' ').toLowerCase();
-                    const articleTitle = (article.title || '').toLowerCase();
-                    const articleDesc = (article.description || '').toLowerCase();
-                    const fullText = `${articleCats} ${articleTitle} ${articleDesc}`;
-
-                    return catInfo.tags.some(tag => {
-                        const cleanTag = tag.trim().toLowerCase();
-                        if (cleanTag.length <= 3) {
-                            const regex = new RegExp(`(^|[^a-zA-Z0-9á-žÁ-Ž])${cleanTag}([^a-zA-Z0-9á-žÁ-Ž]|$)`, 'i');
-                            return regex.test(fullText);
-                        }
-                        return fullText.includes(cleanTag);
-                    });
-                });
+            if (activeCategory === 'all') {
+                return validArticles;
             }
-            return validArticles;
+
+            const sourceCatsMap = new Map();
+            sources.forEach(s => {
+                if (s.defaultCats) sourceCatsMap.set(s.id, s.defaultCats);
+            });
+
+            return validArticles.filter(article => {
+                const cats = (article.sourceDefaultCats && article.sourceDefaultCats.length > 0)
+                    ? article.sourceDefaultCats
+                    : (sourceCatsMap.get(article.sourceId) || []);
+                return cats.includes(activeCategory);
+            });
         }
 
         function applyFilterAndRender(isStillLoading = false, completed = 0, total = 0) {
