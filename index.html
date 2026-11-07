@@ -1281,16 +1281,24 @@
             }
         } catch (e) {}
 
-        function markAsRead(el) {
+        function handleArticleClick(e, el) {
             if (!el) return;
             const link = el.getAttribute('href');
             if (!link || link === '#') return;
+
             readArticles.add(link);
             el.classList.add('read');
             try {
                 const arr = Array.from(readArticles).slice(-500);
                 localStorage.setItem(STORAGE_READ_KEY, JSON.stringify(arr));
-            } catch (e) {}
+            } catch (err) {}
+
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            if (isAndroid) {
+                e.preventDefault();
+                const cleanUrl = link.replace(/^https?:\/\//i, '');
+                window.location.href = `intent://${cleanUrl}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(link)};end`;
+            }
         }
 
         const STORAGE_TRANS_KEY = 'newshub_title_translations';
@@ -2324,7 +2332,7 @@
                 }
 
                 return `
-                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="handleArticleClick(event, this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
