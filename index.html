@@ -2009,25 +2009,31 @@
             }
 
             try {
-                const res = await fetch(`feed.json?v=${Date.now()}`);
-                if (!res.ok) throw new Error();
+                const bust = Date.now();
+                let res;
+                try {
+                    res = await fetch(`https://raw.githubusercontent.com/tx738toxy01/newshub/main/feed.json?v=${bust}`, { cache: 'no-store' });
+                    if (!res.ok) throw new Error();
+                } catch (err) {
+                    res = await fetch(`feed.json?v=${bust}`, { cache: 'no-store' });
+                    if (!res.ok) throw new Error();
+                }
+
                 const data = await res.json();
                 if (data && Array.isArray(data.articles)) {
-                    const currentTopLink = rawArticlesCache[0]?.link;
-                    rawArticlesCache = data.articles.map(a => ({
-                        ...a,
-                        pubDate: new Date(a.pubDate),
-                        categories: Array.isArray(a.categories) ? a.categories : (a.category ? [a.category] : [])
-                    }));
+                    const now = Date.now();
+                    rawArticlesCache = data.articles.map(a => {
+                        const parsed = new Date(a.pubDate);
+                        const safeDate = (isNaN(parsed.getTime()) || parsed.getTime() > now) ? new Date(now) : parsed;
+                        return {
+                            ...a,
+                            pubDate: safeDate,
+                            categories: Array.isArray(a.categories) ? a.categories : (a.category ? [a.category] : [])
+                        };
+                    });
+                    rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
                     saveCachedArticles();
-
-                    const freshFiltered = getFilteredArticles();
-                    if (isBackground && currentTopLink && freshFiltered.length > 0 && freshFiltered[0].link !== currentTopLink) {
-                        const pill = document.getElementById('new-articles-pill');
-                        if (pill) pill.classList.add('show');
-                    } else {
-                        applyFilterAndRender(false);
-                    }
+                    applyFilterAndRender(false);
                 }
             } catch (e) {
                 if (!rawArticlesCache || rawArticlesCache.length === 0) {
@@ -2237,6 +2243,12 @@
                 loadArticles(true);
             }
         });
+
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadArticles(true);
+            }
+        }, 180000);
     </script>
 </body>
 </html>
