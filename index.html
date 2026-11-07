@@ -1778,8 +1778,7 @@
         function triggerFetch() {
             saveSelectedSources();
             updateDropdownButton();
-            applyFilterAndRender(true);
-            fetchNews();
+            applyFilterAndRender(false);
         }
 
         function cleanHtml(rawHtml, sourceName = '') {
@@ -1945,259 +1944,44 @@
             });
         }
 
-        const SOURCE_CACHE_TTL = 5 * 60 * 1000;
-        let sourceFetchTimes = {};
-
-        try {
-            const savedTimes = localStorage.getItem('newshub_source_times');
-            if (savedTimes) sourceFetchTimes = JSON.parse(savedTimes);
-        } catch (e) {}
-
-        async function fetchWithTimeout(url, parentSignal, timeoutMs = 2600) {
-            const controller = new AbortController();
-            const onAbort = () => controller.abort();
-            if (parentSignal) {
-                if (parentSignal.aborted) throw new DOMException('Aborted', 'AbortError');
-                parentSignal.addEventListener('abort', onAbort, { once: true });
-            }
-            const timer = setTimeout(() => controller.abort(), timeoutMs);
-            try {
-                return await fetch(url, { signal: controller.signal });
-            } finally {
-                clearTimeout(timer);
-                if (parentSignal) parentSignal.removeEventListener('abort', onAbort);
-            }
-        }
-
-        async function fetchViaCodeTabs(feedUrl, src, signal) {
-            const res = await fetchWithTimeout(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`, signal);
-            if (!res.ok) throw new Error('Failed');
-            const xml = await res.text();
-            const articles = parseXmlToArticles(xml, src);
-            if (!articles || articles.length === 0) throw new Error('No articles');
-            return articles;
-        }
-
-        async function fetchViaAllOrigins(feedUrl, src, signal) {
-            const res = await fetchWithTimeout(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`, signal);
-            if (!res.ok) throw new Error('Failed');
-            const json = await res.json();
-            const xml = decodeAllOriginsContents(json.contents);
-            const articles = parseXmlToArticles(xml, src);
-            if (!articles || articles.length === 0) throw new Error('No articles');
-            return articles;
-        }
-
-        async function fetchViaRss2Json(feedUrl, src, signal) {
-            const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, signal);
-            if (!res.ok) throw new Error('Failed');
-            const json = await res.json();
-            if (json.status !== 'ok' || !json.items || json.items.length === 0) throw new Error('No articles');
-            return json.items.map(i => {
-                const parsedDate = i.pubDate ? new Date(i.pubDate.replace(' ', 'T')) : new Date();
-                const title = cleanTitle(i.title, src.name);
-                const desc = cleanHtml(i.description || i.content, src.name);
-                return {
-                    sourceId: src.id,
-                    sourceName: src.name,
-                    sourceDefaultCats: src.defaultCats || [],
-                    title: title,
-                    link: i.link || '#',
-                    pubDate: isNaN(parsedDate.getTime()) ? (i.pubDate ? new Date(i.pubDate) : new Date()) : parsedDate,
-                    description: desc === title ? '' : desc,
-                    categories: i.categories ? i.categories.map(c => c.toLowerCase().trim()) : [],
-                    image: extractImageFromJson(i)
-                };
-            });
-        }
-
-        async function fetchViaCorsProxy(feedUrl, src, signal) {
-            const res = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`, signal);
-            if (!res.ok) throw new Error('Failed');
-            const xml = await res.text();
-            const articles = parseXmlToArticles(xml, src);
-            if (!articles || articles.length === 0) throw new Error('No articles');
-            return articles;
-        }
-
-        async function fetchViaCorsLol(feedUrl, src, signal) {
-            const res = await fetchWithTimeout(`https://api.cors.lol/?url=${encodeURIComponent(feedUrl)}`, signal);
-            if (!res.ok) throw new Error('Failed');
-            const xml = await res.text();
-            const articles = parseXmlToArticles(xml, src);
-            if (!articles || articles.length === 0) throw new Error('No articles');
-            return articles;
-        }
-
-        async function raceProxies(feedUrl, src, parentSignal) {
-            const raceController = new AbortController();
-            const onParentAbort = () => raceController.abort();
-            if (parentSignal) {
-                if (parentSignal.aborted) throw new DOMException('Aborted', 'AbortError');
-                parentSignal.addEventListener('abort', onParentAbort, { once: true });
-            }
-
-            const candidates = [
-                fetchViaCodeTabs(feedUrl, src, raceController.signal),
-                fetchViaAllOrigins(feedUrl, src, raceController.signal),
-                fetchViaRss2Json(feedUrl, src, raceController.signal),
-                fetchViaCorsProxy(feedUrl, src, raceController.signal),
-                fetchViaCorsLol(feedUrl, src, raceController.signal)
-            ];
-
-            try {
-                const winner = await Promise.any(candidates);
-                raceController.abort();
-                return winner;
-            } catch (e) {
-                raceController.abort();
-                return [];
-            } finally {
-                if (parentSignal) parentSignal.removeEventListener('abort', onParentAbort);
-            }
-        }
-
-        function buildFallbackFeedUrl(src) {
-            try {
-                const domain = src.domain || new URL(src.url).hostname.replace(/^www\.|^spravy\.|^servis\.|^vyber\.|^feeds\.|^rss\./i, '');
-                if (src.lang === 'sk') {
-                    return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=sk&gl=SK&ceid=SK:sk`;
-                }
-                if (src.lang === 'cz') {
-                    return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=cs&gl=CZ&ceid=CZ:cs`;
-                }
-                return `https://news.google.com/rss/search?q=site:${encodeURIComponent(domain)}&hl=en-US&gl=US&ceid=US:en`;
-            } catch (e) {
-                return '';
-            }
-        }
-
-        async function fetchNewsForSource(src, signal) {
-            const lastFetched = sourceFetchTimes[src.id] || 0;
-            const isFresh = (Date.now() - lastFetched) < SOURCE_CACHE_TTL;
-            if (isFresh) {
-                const cached = rawArticlesCache.filter(a => a.sourceId === src.id);
-                if (cached.length > 0) return cached;
-            }
-
-            let articles = await raceProxies(src.url, src, signal);
-            if (!articles || articles.length === 0) {
-                const fallbackUrl = buildFallbackFeedUrl(src);
-                if (fallbackUrl) {
-                    articles = await raceProxies(fallbackUrl, src, signal);
-                }
-            }
-
-            if (articles && articles.length > 0) {
-                sourceFetchTimes[src.id] = Date.now();
-                try {
-                    localStorage.setItem('newshub_source_times', JSON.stringify(sourceFetchTimes));
-                } catch (e) {}
-                return articles;
-            }
-
-            return [];
-        }
-
-        async function fetchNews() {
-            const checkedSources = getCheckedSources();
-            const grid = document.getElementById('news-grid');
+        async function loadArticles(isBackground = false) {
             const status = document.getElementById('status-text');
             const t = i18n[currentLang];
-
-            fetchController.abort();
-            fetchController = new AbortController();
-            const signal = fetchController.signal;
-
-            if (checkedSources.length === 0) {
-                grid.innerHTML = `<div class="empty-state">${t.selectSourceMsg}</div>`;
-                status.innerText = t.noSource;
-                return;
-            }
-
-            const checkedIds = new Set(checkedSources.map(s => s.id));
-            const hasVisibleArticles = rawArticlesCache.some(a => checkedIds.has(a.sourceId));
-
-            if (!hasVisibleArticles) {
-                grid.innerHTML = `
-                    <div class="loader">
-                        <div class="spinner"></div>
-                        <div>${t.loadingSources}</div>
-                    </div>
-                `;
-                status.innerText = t.progressCount(t.loading, 0, checkedSources.length);
-            } else {
-                status.innerText = t.progressCount(t.fastUpdate, 0, checkedSources.length);
-            }
-
-            let completedCount = 0;
-            const concurrency = 12;
-            const queue = [...checkedSources];
-
-            async function worker() {
-                while (queue.length > 0) {
-                    if (signal.aborted) return;
-                    const src = queue.shift();
-                    try {
-                        const res = await fetchNewsForSource(src, signal);
-                        if (signal.aborted) return;
-                        completedCount++;
-                        if (res.length > 0) {
-                            const currentTopLink = articlesCache[0]?.link;
-                            const map = new Map();
-                            rawArticlesCache.forEach(a => map.set(a.link, a));
-                            res.forEach(a => map.set(a.link, a));
-                            rawArticlesCache = Array.from(map.values());
-                            rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
-                            if (rawArticlesCache.length > 500) {
-                                rawArticlesCache = rawArticlesCache.slice(0, 500);
-                            }
-                            saveCachedArticles();
-
-                            if (articlesCache.length === 0) {
-                                applyFilterAndRender(completedCount < checkedSources.length, completedCount, checkedSources.length);
-                            } else {
-                                const freshFiltered = getFilteredArticles();
-                                if (freshFiltered.length > 0 && freshFiltered[0].link !== currentTopLink) {
-                                    const pill = document.getElementById('new-articles-pill');
-                                    if (pill) pill.classList.add('show');
-                                }
-                                if (completedCount < checkedSources.length) {
-                                    status.innerText = t.progressCount(t.updating, completedCount, checkedSources.length);
-                                } else {
-                                    status.innerText = t.shownCount(articlesCache.length);
-                                }
-                            }
-                        } else {
-                            if (hasVisibleArticles) {
-                                status.innerText = t.progressCount(t.updating, completedCount, checkedSources.length);
-                            } else {
-                                status.innerText = t.progressCount(t.loading, completedCount, checkedSources.length);
-                            }
-                        }
-                    } catch (e) {
-                        if (e.name === 'AbortError' || signal.aborted) return;
-                        completedCount++;
-                    }
-                }
+            if (!isBackground && status && rawArticlesCache.length === 0) {
+                status.innerText = t.loading;
             }
 
             try {
-                const workers = Array.from({ length: Math.min(concurrency, checkedSources.length) }, () => worker());
-                await Promise.all(workers);
-                if (!signal.aborted && articlesCache.length === 0) {
-                    applyFilterAndRender(false, completedCount, checkedSources.length);
-                } else if (!signal.aborted) {
-                    status.innerText = t.shownCount(articlesCache.length);
-                }
-            } catch (e) {
-                if (e.name !== 'AbortError' && !signal.aborted) {
-                    if (!hasVisibleArticles) {
-                        grid.innerHTML = `<div class="empty-state">${t.errorMsg}</div>`;
-                        status.innerText = t.error;
+                const res = await fetch(`feed.json?v=${Date.now()}`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                if (data && Array.isArray(data.articles)) {
+                    const currentTopLink = rawArticlesCache[0]?.link;
+                    rawArticlesCache = data.articles.map(a => ({
+                        ...a,
+                        pubDate: new Date(a.pubDate),
+                        categories: Array.isArray(a.categories) ? a.categories : (a.category ? [a.category] : [])
+                    }));
+                    saveCachedArticles();
+
+                    const freshFiltered = getFilteredArticles();
+                    if (isBackground && currentTopLink && freshFiltered.length > 0 && freshFiltered[0].link !== currentTopLink) {
+                        const pill = document.getElementById('new-articles-pill');
+                        if (pill) pill.classList.add('show');
+                    } else {
+                        applyFilterAndRender(false);
                     }
                 }
+            } catch (e) {
+                if (!rawArticlesCache || rawArticlesCache.length === 0) {
+                    loadCachedArticles();
+                }
+                applyFilterAndRender(false);
             }
+        }
+
+        function fetchNews() {
+            loadArticles(false);
         }
 
         function getFilteredArticles() {
@@ -2323,15 +2107,8 @@
                     }
                 }
 
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                const safeUrl = article.link.replace(/^https?:\/\//i, '').replace(/#/g, '%23');
-                const cardHref = isAndroid
-                    ? `intent://${safeUrl}#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;package=com.android.chrome;component=com.android.chrome/com.google.android.apps.chrome.Main;end`
-                    : article.link;
-                const targetAttrs = isAndroid ? '' : 'target="_blank" rel="noopener noreferrer"';
-
                 return `
-                    <a href="${cardHref}" ${targetAttrs} data-link="${article.link}" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
+                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
@@ -2357,6 +2134,12 @@
         }
 
         initUI();
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                loadArticles(true);
+            }
+        });
     </script>
 </body>
 </html>
