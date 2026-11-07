@@ -844,7 +844,7 @@
     </div>
 
     <script>
-        const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&q=80';
+        const DEFAULT_IMAGE = '';
         const STORAGE_SOURCES_KEY = 'newshub_selected_sources';
         const STORAGE_VIEW_KEY = 'newshub_list_view';
         const STORAGE_ARTICLES_KEY = 'newshub_cached_articles';
@@ -1106,7 +1106,8 @@
                     if (Array.isArray(parsed) && parsed.length > 0) {
                         rawArticlesCache = parsed.map(a => ({
                             ...a,
-                            pubDate: new Date(a.pubDate)
+                            pubDate: new Date(a.pubDate),
+                            image: (a.image && a.image.includes('unsplash.com')) ? '' : (a.image || '')
                         }));
                     }
                 }
@@ -1348,10 +1349,10 @@
             if (item.enclosure && item.enclosure.link && (!item.enclosure.type || item.enclosure.type.includes('image'))) {
                 return item.enclosure.link;
             }
-            if (item.thumbnail) return item.thumbnail;
-            const content = item.description || item.content || '';
-            const match = content.match(/<img[^>]+(?:src|data-src)=["'](https?:\/\/[^"']+)["']/i);
-            if (match && match[1] && !match[1].includes('googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc')) {
+            if (item.thumbnail && item.thumbnail.startsWith('http')) return item.thumbnail;
+            const content = (item.description || '') + ' ' + (item.content || '');
+            const match = content.match(/<img[^>]+(?:src|data-src)=["'](https?:\/\/[^"'>\s]+)["']/i);
+            if (match && match[1] && !match[1].includes('googleusercontent.com/J6_coFbogxh')) {
                 return match[1];
             }
             return '';
@@ -1360,30 +1361,41 @@
         function extractImageFromXmlItem(item, description) {
             const enclosure = item.querySelector('enclosure');
             if (enclosure) {
-                const type = enclosure.getAttribute('type') || '';
                 const url = enclosure.getAttribute('url');
-                if (url && url.startsWith('http') && (!type || type.includes('image'))) return url;
-            }
-
-            const mediaContents = item.getElementsByTagName('media:content');
-            for (let i = 0; i < mediaContents.length; i++) {
-                const url = mediaContents[i].getAttribute('url');
-                const medium = mediaContents[i].getAttribute('medium') || '';
-                const type = mediaContents[i].getAttribute('type') || '';
-                if (url && url.startsWith('http') && (!medium || medium === 'image' || type.includes('image'))) return url;
-            }
-
-            const mediaThumbnails = item.getElementsByTagName('media:thumbnail');
-            if (mediaThumbnails.length > 0 && mediaThumbnails[0].getAttribute('url')) {
-                const url = mediaThumbnails[0].getAttribute('url');
                 if (url && url.startsWith('http')) return url;
             }
 
-            const encodedContent = item.getElementsByTagName('content:encoded')[0]?.textContent || '';
-            const combinedHtml = description + ' ' + encodedContent;
-            const imgMatch = combinedHtml.match(/<img[^>]+(?:src|data-src)=["'](https?:\/\/[^"']+)["']/i);
-            if (imgMatch && imgMatch[1] && !imgMatch[1].includes('lh3.googleusercontent.com/J6_coFbogxhRI9iM864NL_liGXvsQp2AupsKei7z0cNNfDvGUmWUy20nuUhkREQyrpY4bEeIBuc')) {
-                return imgMatch[1];
+            const allWithUrl = item.querySelectorAll('[url]');
+            for (const el of allWithUrl) {
+                const url = el.getAttribute('url');
+                if (url && url.startsWith('http') && !url.includes('googleusercontent.com/J6_coFbogxh')) {
+                    const medium = el.getAttribute('medium') || '';
+                    const type = el.getAttribute('type') || '';
+                    if (medium === 'image' || type.includes('image') || /\.(jpe?g|png|webp|avif|gif)(\?.*)?$/i.test(url) || el.tagName.toLowerCase().includes('thumbnail') || el.tagName.toLowerCase().includes('content')) {
+                        return url;
+                    }
+                }
+            }
+
+            let rawText = '';
+            try {
+                rawText = new XMLSerializer().serializeToString(item);
+            } catch (e) {
+                rawText = item.innerHTML || '';
+            }
+            rawText += ' ' + (description || '');
+
+            const mediaMatch = rawText.match(/<(?:media:content|enclosure|media:thumbnail)[^>]+url=["'](https?:\/\/[^"'>\s]+)["']/i);
+            if (mediaMatch && mediaMatch[1]) {
+                return mediaMatch[1];
+            }
+
+            const imgMatches = rawText.matchAll(/<img[^>]+(?:src|data-src)=["'](https?:\/\/[^"'>\s]+)["']/gi);
+            for (const m of imgMatches) {
+                const u = m[1];
+                if (!u.includes('googleusercontent.com/J6_coFbogxh') && !u.includes('pixel') && !u.includes('1x1') && !u.includes('tracker')) {
+                    return u;
+                }
             }
 
             return '';
@@ -1821,6 +1833,12 @@
 
                 const imageMarkup = article.image
                     ? `<img src="${article.image}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="card-img-placeholder" style="display:none;"><span>${article.sourceName}</span></div>`
+                    : `<div class="card-img-placeholder"><span>${article.sourceName}</span></div>`;
+
+                const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
+
+                const imageMarkup = safeImage
+                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;"><span>${article.sourceName}</span></div>`
                     : `<div class="card-img-placeholder"><span>${article.sourceName}</span></div>`;
 
                 return `
