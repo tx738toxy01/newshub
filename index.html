@@ -1314,17 +1314,33 @@
         const STORAGE_READ_KEY = 'newshub_read_articles';
         let readArticles = new Set();
 
+        function normalizeArticleLink(url) {
+            if (!url || typeof url !== 'string') return '';
+            try {
+                let clean = url.trim().replace(/&amp;/g, '&');
+                try { clean = decodeURI(clean); } catch (e) {}
+                clean = clean.split('#')[0].replace(/\/+$/, '');
+                clean = clean.replace(/^http:\/\//i, 'https://');
+                return clean;
+            } catch (e) {
+                return url.trim();
+            }
+        }
+
         try {
             const savedRead = localStorage.getItem(STORAGE_READ_KEY);
             if (savedRead) {
                 const parsed = JSON.parse(savedRead);
-                if (Array.isArray(parsed)) readArticles = new Set(parsed);
+                if (Array.isArray(parsed)) {
+                    readArticles = new Set(parsed.map(normalizeArticleLink));
+                }
             }
         } catch (e) {}
 
         function markAsRead(el) {
             if (!el) return;
-            const link = el.dataset.link || el.getAttribute('href');
+            const rawLink = el.getAttribute('data-link') || el.getAttribute('href');
+            const link = normalizeArticleLink(rawLink);
             if (!link || link === '#' || link.startsWith('intent:')) return;
             readArticles.add(link);
             el.classList.add('read');
@@ -2141,8 +2157,9 @@
                     ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;">${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-ambient" loading="lazy"><div class="placeholder-icon-wrap"><img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy"></div>` : ''}</div>`
                     : placeholderMarkup;
 
-                const isRead = readArticles.has(article.link);
+                const isRead = readArticles.has(normalizeArticleLink(article.link));
                 const isEn = sources.some(s => s.id === article.sourceId && s.lang === 'en');
+                const safeCardLink = (article.link || '').replace(/"/g, '&quot;');
 
                 let titleToDisplay = article.title;
                 let translateBtn = '';
@@ -2164,7 +2181,7 @@
                 }
 
                 return `
-                    <a href="${article.link}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
+                    <a href="${article.link}" data-link="${safeCardLink}" target="_blank" rel="noopener noreferrer" onclick="markAsRead(this)" class="card ${isRead ? 'read' : ''} ${extraCardClass}" ${extraDataAttrs}>
                         <div class="card-img-wrapper">
                             ${imageMarkup}
                         </div>
@@ -2194,10 +2211,13 @@
                 const savedRead = localStorage.getItem(STORAGE_READ_KEY);
                 if (savedRead) {
                     const parsed = JSON.parse(savedRead);
-                    if (Array.isArray(parsed)) readArticles = new Set(parsed);
+                    if (Array.isArray(parsed)) {
+                        readArticles = new Set(parsed.map(normalizeArticleLink));
+                    }
                 }
                 document.querySelectorAll('.card').forEach(card => {
-                    const link = card.getAttribute('href');
+                    const rawLink = card.getAttribute('data-link') || card.getAttribute('href');
+                    const link = normalizeArticleLink(rawLink);
                     if (link && readArticles.has(link)) {
                         card.classList.add('read');
                     }
