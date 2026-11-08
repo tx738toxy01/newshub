@@ -360,29 +360,86 @@
         }
 
         .source-group {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            background: var(--bg-page);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .source-group.open {
+            border-color: var(--border-focus);
         }
 
         .group-title {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            margin-bottom: 8px;
-            padding-left: 2px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            background: var(--surface);
+            transition: var(--transition-smooth);
         }
 
-        .group-title label {
+        .group-title:hover {
+            background: var(--surface-hover);
+        }
+
+        .group-title-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .group-title-text {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .group-title-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--text-muted);
+            transition: transform 0.25s ease;
+        }
+
+        .source-group.open .group-title-icon {
+            transform: rotate(180deg);
+        }
+
+        .group-content {
+            display: none;
+            padding: 8px 10px 14px 10px;
+            background: var(--bg-page);
+        }
+
+        .source-group.open .group-content {
+            display: block;
+        }
+
+        .btn-reset-sources {
+            background: transparent;
+            border: 1px solid var(--border-light);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition-smooth);
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: color 0.15s;
+            gap: 6px;
+            margin-left: auto;
         }
 
-        .group-title label:hover {
+        .btn-reset-sources:hover {
+            background: var(--surface-hover);
             color: var(--primary-accent);
+            border-color: var(--border-focus);
         }
 
         .group-title input, .source-item input {
@@ -1828,6 +1885,7 @@
                 activeCount: (n) => `${n} aktívnych`,
                 selectAll: 'Označiť všetky',
                 deselectAll: 'Zrušiť všetky',
+                resetDefaults: 'Obnoviť podľa servera',
                 newArticlesPill: 'Najnovšie správy',
                 backBtn: 'Späť',
                 backToSettings: 'Späť do nastavení',
@@ -1875,6 +1933,7 @@
                 activeCount: (n) => `${n} active`,
                 selectAll: 'Select all',
                 deselectAll: 'Deselect all',
+                resetDefaults: 'Reset to default',
                 newArticlesPill: 'Latest news',
                 backBtn: 'Back',
                 backToSettings: 'Back to settings',
@@ -2051,34 +2110,64 @@ const searchI18n = {
                 : getSavedSourceIds();
             srcContainer.innerHTML = '';
 
-            const groups = [...new Set(sources.map(s => s.group))];
-            groups.forEach(groupName => {
+            const categoriesMap = new Map();
+            categories.forEach(cat => {
+                if (cat.id !== 'all') categoriesMap.set(cat.id, { ...cat, sources: [] });
+            });
+
+            sources.forEach(src => {
+                let assigned = false;
+                if (src.defaultCats && src.defaultCats.length > 0) {
+                    src.defaultCats.forEach(catId => {
+                        if (categoriesMap.has(catId)) {
+                            categoriesMap.get(catId).sources.push(src);
+                            assigned = true;
+                        }
+                    });
+                }
+                if (!assigned && categoriesMap.has('tech')) {
+                    categoriesMap.get('tech').sources.push(src);
+                }
+            });
+
+            categoriesMap.forEach(cat => {
+                if (cat.sources.length === 0) return;
+                
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'source-group';
-                const localizedGroupName = t.groups[groupName] || groupName;
+                
+                const isAllChecked = cat.sources.every(s => checkedIds.has(s.id));
+                const hasChecked = cat.sources.some(s => checkedIds.has(s.id));
+                
                 groupDiv.innerHTML = `
-                    <div class="group-title">
-                        <label>
-                            <input type="checkbox" id="group-cb-${groupName}" onchange="toggleGroup('${groupName}', this.checked)">
-                            <span>${localizedGroupName}</span>
-                        </label>
+                    <div class="group-title" onclick="this.parentElement.classList.toggle('open')">
+                        <div class="group-title-left">
+                            <label class="filter-source-toggle" title="Zapnúť/vypnúť celú kategóriu" onclick="event.stopPropagation()">
+                                <input type="checkbox" id="cat-cb-${cat.id}" ${isAllChecked ? 'checked' : ''} onchange="toggleCategoryGroup('${cat.id}', this.checked)">
+                            </label>
+                            <span class="group-title-text">${cat.name[currentLang]}</span>
+                        </div>
+                        <svg class="group-title-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </div>
+                    <div class="group-content"></div>
                 `;
 
-                sources.filter(s => s.group === groupName).forEach(src => {
+                const contentDiv = groupDiv.querySelector('.group-content');
+                
+                cat.sources.forEach(src => {
                     const isChecked = checkedIds.has(src.id);
                     const row = document.createElement('div');
                     row.className = 'source-item-row';
                     row.innerHTML = `
                         <label class="source-item">
-                            <input type="checkbox" id="${src.id}" value="${src.id}" ${isChecked ? 'checked' : ''} onchange="triggerFetch()">
+                            <input type="checkbox" id="${src.id}" value="${src.id}" data-cat="${cat.id}" ${isChecked ? 'checked' : ''} onchange="triggerFetch(); updateCategoryCb('${cat.id}')">
                             <span>${src.name}</span>
                         </label>
                         <button class="btn-source-filter" onclick="closeAllModals(); filterBySource(event, '${src.id}')" title="${t.sourceFilterArticles(src.name)}" aria-label="${t.sourceFilterArticles(src.name)}">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </button>
                     `;
-                    groupDiv.appendChild(row);
+                    contentDiv.appendChild(row);
                 });
                 srcContainer.appendChild(groupDiv);
             });
@@ -2088,8 +2177,34 @@ const searchI18n = {
                 sourceControls.innerHTML = `
                     <button onclick="toggleAllSources(true)">${t.selectAll}</button>
                     <button onclick="toggleAllSources(false)">${t.deselectAll}</button>
+                    <button class="btn-reset-sources" onclick="resetSourcesToDefault()" title="${t.resetDefaults}">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                    </button>
                 `;
             }
+        }
+
+        function toggleCategoryGroup(catId, state) {
+            document.querySelectorAll(`input[data-cat="${catId}"]`).forEach(el => {
+                el.checked = state;
+            });
+            triggerFetch();
+        }
+
+        function updateCategoryCb(catId) {
+            const allBoxes = Array.from(document.querySelectorAll(`input[data-cat="${catId}"]`));
+            const cb = document.getElementById(`cat-cb-${catId}`);
+            if (cb) {
+                cb.checked = allBoxes.every(el => el.checked);
+            }
+        }
+
+        function resetSourcesToDefault() {
+            try {
+                localStorage.removeItem(STORAGE_SOURCES_KEY);
+            } catch (e) {}
+            renderSourcesList();
+            triggerFetch();
         }
 
         function loadCachedArticles() {
