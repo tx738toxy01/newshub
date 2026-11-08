@@ -2210,6 +2210,7 @@
         }
 
         function selectCategory(catId) {
+            const isSameCat = (activeCategory === catId);
             const pill = document.getElementById('new-articles-pill');
             if (pill) pill.classList.remove('show');
 
@@ -2232,6 +2233,10 @@
             }
 
             window.scrollTo(0, 0);
+
+            if (isSameCat) {
+                loadArticles(false);
+            }
         }
 
         function triggerFetch() {
@@ -2433,6 +2438,8 @@
 
                 if (data && Array.isArray(data.articles)) {
                     const now = Date.now();
+                    const currentTopLink = rawArticlesCache.length > 0 ? rawArticlesCache[0].link : null;
+                    
                     rawArticlesCache = data.articles.map(a => {
                         const parsed = new Date(a.pubDate);
                         const safeDate = (isNaN(parsed.getTime()) || parsed.getTime() > now) ? new Date(now) : parsed;
@@ -2444,7 +2451,15 @@
                     });
                     rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
                     saveCachedArticles();
-                    applyFilterAndRender(false);
+                    
+                    if (isBackground && currentTopLink) {
+                        if (rawArticlesCache.length > 0 && rawArticlesCache[0].link !== currentTopLink) {
+                            const pill = document.getElementById('new-articles-pill');
+                            if (pill) pill.classList.add('show');
+                        }
+                    } else {
+                        applyFilterAndRender(false);
+                    }
                 }
             } catch (e) {
                 if (!rawArticlesCache || rawArticlesCache.length === 0) {
