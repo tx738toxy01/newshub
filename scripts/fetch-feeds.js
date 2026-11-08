@@ -193,25 +193,38 @@ function parseFeedXml(xml, src) {
 }
 
 async function fetchSource(src) {
+    const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
+    let xml = '';
+
     try {
         const res = await fetch(src.url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Accept': 'application/rss+xml, application/xml, text/xml, */*;q=0.8',
-                'Accept-Language': 'sk,cs;q=0.9,en;q=0.8',
-                'Cache-Control': 'no-cache',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none'
+                'User-Agent': userAgent,
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
             },
             signal: AbortSignal.timeout(TIMEOUT_MS)
         });
-        if (!res.ok) return [];
-        const xml = await res.text();
-        return parseFeedXml(xml, src);
-    } catch (e) {
-        return [];
+        if (res.ok) {
+            xml = await res.text();
+        }
+    } catch (e) {}
+
+    if (!xml || xml.includes('Just a moment...') || xml.includes('cloudflare')) {
+        try {
+            const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(src.url);
+            const resProxy = await fetch(proxyUrl, {
+                headers: { 'User-Agent': userAgent },
+                signal: AbortSignal.timeout(TIMEOUT_MS)
+            });
+            if (resProxy.ok) {
+                xml = await resProxy.text();
+            }
+        } catch (e) {}
     }
+
+    if (!xml) return [];
+    
+    return parseFeedXml(xml, src);
 }
 
 async function runPool(items, limit, fn) {
