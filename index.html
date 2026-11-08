@@ -2539,6 +2539,14 @@ const searchI18n = {
                 }
                 if (!link) link = '#';
 
+                let realDomain = '';
+                const sourceNode = item.querySelector('source');
+                if (sourceNode && sourceNode.getAttribute('url')) {
+                    try {
+                        realDomain = new URL(sourceNode.getAttribute('url')).hostname;
+                    } catch(e){}
+                }
+
                 const pubDateRaw = item.querySelector('pubDate, pubdate, updated, published')?.textContent ||
                                    item.getElementsByTagName('dc:date')[0]?.textContent;
                 const parsedDate = pubDateRaw ? new Date(pubDateRaw) : new Date();
@@ -2556,6 +2564,7 @@ const searchI18n = {
                     sourceDefaultCats: src.defaultCats || [],
                     title: title,
                     link: link,
+                    realDomain: realDomain,
                     pubDate: isNaN(parsedDate.getTime()) ? new Date() : parsedDate,
                     description: cleanedDesc === title ? '' : cleanedDesc,
                     categories: categoryTags,
@@ -2775,7 +2784,13 @@ const searchI18n = {
 
                 let hostDomain = '';
                 try {
-                    hostDomain = new URL(article.link).hostname;
+                    hostDomain = article.realDomain || new URL(article.link).hostname;
+                    
+                    if (hostDomain.includes('news.google.com') || hostDomain === 'news.url.google.com') {
+                        let cleanName = article.sourceName.toLowerCase().replace(/[^a-z0-9.]/g, '');
+                        if (!cleanName.includes('.')) cleanName += '.com';
+                        hostDomain = cleanName;
+                    }
                 } catch (e) {}
 
                 const faviconUrl = hostDomain
