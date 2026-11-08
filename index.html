@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&family=Lora:ital,wght@0,600;0,700;1,600&family=Merriweather:ital,wght@0,700;1,400&family=Montserrat:wght@600;700&family=Newsreader:ital,opsz,wght@0,6..72,600;0,6..72,700;1,6..72,600&family=Outfit:wght@600;700&family=Playfair+Display:ital,wght@0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@500;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,600;0,8..60,700;1,8..60,600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-page: #090d16;
@@ -907,12 +907,86 @@
             pointer-events: none;
         }
 
+        .font-settings-box {
+            margin-bottom: 18px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .font-section-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            margin: 12px 0 6px 2px;
+        }
+
+        .font-section-label:first-child {
+            margin-top: 0;
+        }
+
+        .font-options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .font-opt-btn {
+            background: var(--bg-page);
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            font-size: 0.96rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-align: left;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+        }
+
+        .font-opt-btn:hover {
+            border-color: var(--primary-accent);
+            background: var(--surface-hover);
+        }
+
+        .font-opt-btn.active {
+            border-color: var(--primary-accent);
+            background: var(--accent-soft);
+            color: var(--primary-accent);
+        }
+
+        .font-opt-check {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            border: 1.5px solid #4b5563;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: #1f2937;
+            font-family: sans-serif;
+            font-size: 11px;
+            font-weight: 800;
+            color: transparent;
+            line-height: 1;
+        }
+
+        .font-opt-btn.active .font-opt-check {
+            background: var(--primary-accent);
+            border-color: var(--primary-accent);
+            color: #ffffff;
+        }
+
         .card-title {
-            font-family: 'Lora', Georgia, serif;
-            font-size: 1.02rem;
-            font-weight: 600;
-            line-height: 1.35;
-            letter-spacing: -0.1px;
+            font-family: var(--news-font, 'Plus Jakarta Sans', sans-serif);
+            font-size: 0.98rem;
+            font-weight: 700;
+            line-height: 1.34;
             margin-bottom: 8px;
             color: var(--primary);
             transition: color 0.15s;
@@ -926,9 +1000,7 @@
 
         .card-desc {
             display: none;
-            font-family: 'Lora', Georgia, serif;
-            font-size: 0.88rem;
-            line-height: 1.45;
+            font-family: var(--news-font, 'Plus Jakarta Sans', sans-serif);
         }
 
         .card-footer {
@@ -1114,6 +1186,26 @@
                 </svg>
             </button>
         </div>
+        <div class="font-settings-box">
+            <div class="font-section-label">Pätkové písma (Serif)</div>
+            <div class="font-options-grid">
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Newsreader')" style="font-family: 'Newsreader', Georgia, serif;"><span>Newsreader</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Lora')" style="font-family: 'Lora', Georgia, serif;"><span>Lora</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Merriweather')" style="font-family: 'Merriweather', Georgia, serif;"><span>Merriweather</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Playfair Display')" style="font-family: 'Playfair Display', Georgia, serif;"><span>Playfair</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Source Serif 4')" style="font-family: 'Source Serif 4', Georgia, serif;"><span>Source Serif</span><span class="font-opt-check">✓</span></button>
+            </div>
+
+            <div class="font-section-label">Bezpätkové písma (Sans-Serif)</div>
+            <div class="font-options-grid">
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Plus Jakarta Sans')" style="font-family: 'Plus Jakarta Sans', sans-serif;"><span>Jakarta</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Inter')" style="font-family: 'Inter', sans-serif;"><span>Inter</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Roboto')" style="font-family: 'Roboto', sans-serif;"><span>Roboto</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Outfit')" style="font-family: 'Outfit', sans-serif;"><span>Outfit</span><span class="font-opt-check">✓</span></button>
+                <button type="button" class="font-opt-btn" onclick="setNewsFont('Montserrat')" style="font-family: 'Montserrat', sans-serif;"><span>Montserrat</span><span class="font-opt-check">✓</span></button>
+            </div>
+        </div>
+
         <div class="source-controls">
             <button onclick="toggleAllSources(true)">Označiť všetky</button>
             <button onclick="toggleAllSources(false)">Zrušiť všetky</button>
@@ -1145,6 +1237,40 @@
         const STORAGE_SOURCES_KEY = 'newshub_selected_sources';
         const STORAGE_VIEW_KEY = 'newshub_list_view';
         const STORAGE_ARTICLES_KEY = 'newshub_cached_articles';
+        const STORAGE_FONT_FAMILY_KEY = 'newshub_font_family';
+
+        const FONT_MAP = {
+            'Newsreader': "'Newsreader', Georgia, serif",
+            'Lora': "'Lora', Georgia, serif",
+            'Merriweather': "'Merriweather', Georgia, serif",
+            'Playfair Display': "'Playfair Display', Georgia, serif",
+            'Source Serif 4': "'Source Serif 4', Georgia, serif",
+            'Plus Jakarta Sans': "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif",
+            'Inter': "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            'Roboto': "'Roboto', -apple-system, BlinkMacSystemFont, sans-serif",
+            'Outfit': "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
+            'Montserrat': "'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif"
+        };
+
+        let currentNewsFont = 'Plus Jakarta Sans';
+
+        function setNewsFont(fontName) {
+            if (!FONT_MAP[fontName]) fontName = 'Plus Jakarta Sans';
+            currentNewsFont = fontName;
+            document.documentElement.style.setProperty('--news-font', FONT_MAP[fontName]);
+            try {
+                localStorage.setItem(STORAGE_FONT_FAMILY_KEY, fontName);
+            } catch (e) {}
+
+            document.querySelectorAll('.font-opt-btn').forEach(btn => {
+                const btnFont = btn.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+                if (btnFont === fontName) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
 
         const categories = [
             { id: 'all', name: { sk: 'Najnovšie', en: 'Latest' }, icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>', tags: [] },
@@ -1541,6 +1667,13 @@
                     setFontLevel(parseInt(savedFont, 10));
                 }
             } catch (e) {}
+
+            try {
+                const savedFamily = localStorage.getItem(STORAGE_FONT_FAMILY_KEY);
+                setNewsFont(savedFamily || 'Plus Jakarta Sans');
+            } catch (e) {
+                setNewsFont('Plus Jakarta Sans');
+            }
 
             loadPreferences();
             loadCachedArticles();
