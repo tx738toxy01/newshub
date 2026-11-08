@@ -1369,8 +1369,8 @@
         <div class="modal-window" onclick="event.stopPropagation()">
             <div class="modal-header">
                 <div class="modal-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    <span>Nastavenia</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span id="settings-modal-title-text">Nastavenia</span>
                 </div>
                 <button class="modal-close" onclick="closeAllModals()" aria-label="Zavrieť">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -1384,7 +1384,7 @@
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"></path><path d="m6 16 6-12 6 12"></path><path d="M8 12h8"></path></svg>
                             </div>
                             <div class="settings-item-text">
-                                <strong>Písmo (Fonts)</strong>
+                                <strong id="settings-fonts-item-title">Písmo (Fonts)</strong>
                                 <span id="settings-current-font-desc">Výber novinárskeho fontu a štýlu</span>
                             </div>
                         </div>
@@ -1397,8 +1397,8 @@
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg>
                             </div>
                             <div class="settings-item-text">
-                                <strong>Zdroje správ (Sources)</strong>
-                                <span>Spravovať 300 spravodajských webov</span>
+                                <strong id="settings-sources-item-title">Zdroje správ (Sources)</strong>
+                                <span id="settings-sources-item-desc">Spravovať spravodajské weby</span>
                             </div>
                         </div>
                         <span class="settings-item-badge" id="settings-sources-count-badge">0 aktívnych</span>
@@ -1415,7 +1415,7 @@
                     <button class="modal-close" onclick="openModal('settings-modal')" style="margin-right: 4px;" title="Späť do nastavení">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     </button>
-                    <span>Písmo správ</span>
+                    <span id="fonts-modal-title-text">Písmo správ</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <label class="bold-toggle-label" title="Zapnúť alebo vypnúť tučné písmo na správach">
@@ -1428,7 +1428,7 @@
                 </div>
             </div>
             <div class="modal-body">
-                <div class="font-section-label">Pätkové písma (Serif)</div>
+                <div class="font-section-label" id="font-serif-label">Pätkové písma (Serif)</div>
                 <div class="font-options-grid">
                     <button type="button" class="font-opt-btn" onclick="setNewsFont('Newsreader')"><span class="font-preview-text" style="font-family: 'Newsreader', Georgia, serif !important;">Newsreader</span><span class="font-opt-check">✓</span></button>
                     <button type="button" class="font-opt-btn" onclick="setNewsFont('Lora')"><span class="font-preview-text" style="font-family: 'Lora', Georgia, serif !important;">Lora</span><span class="font-opt-check">✓</span></button>
@@ -1437,7 +1437,7 @@
                     <button type="button" class="font-opt-btn" onclick="setNewsFont('Source Serif 4')"><span class="font-preview-text" style="font-family: 'Source Serif 4', Georgia, serif !important;">Source Serif</span><span class="font-opt-check">✓</span></button>
                 </div>
 
-                <div class="font-section-label" style="margin-top: 14px;">Bezpätkové písma (Sans-Serif)</div>
+                <div class="font-section-label" id="font-sans-label" style="margin-top: 14px;">Bezpätkové písma (Sans-Serif)</div>
                 <div class="font-options-grid">
                     <button type="button" class="font-opt-btn" onclick="setNewsFont('Plus Jakarta Sans')"><span class="font-preview-text" style="font-family: 'Plus Jakarta Sans', sans-serif !important;">Jakarta</span><span class="font-opt-check">✓</span></button>
                     <button type="button" class="font-opt-btn" onclick="setNewsFont('Inter')"><span class="font-preview-text" style="font-family: 'Inter', sans-serif !important;">Inter</span><span class="font-opt-check">✓</span></button>
@@ -1470,24 +1470,6 @@
                 <div id="sources-list-container"></div>
             </div>
         </div>
-    </div>
-    <div class="layout">
-        <main class="main-content">
-            <button id="new-articles-pill" class="new-articles-pill" onclick="showNewestArticles()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="18 15 12 9 6 15"></polyline>
-                </svg>
-                Najnovšie správy
-            </button>
-            <div id="source-filter-bar" class="source-filter-bar" style="display: none;"></div>
-            <div class="content-header" id="main-content-header">
-                <h2 id="current-category-title">⚡ Najnovšie</h2>
-                <div class="status-text" id="status-text">Pripravené</div>
-            </div>
-            <div class="grid" id="news-grid">
-                <div class="empty-state">Načítavam zoznam zdrojov...</div>
-            </div>
-        </main>
     </div>
 
     <script>
@@ -1654,8 +1636,9 @@
             btn.classList.add('active');
             const span = btn.querySelector('span');
             if (span) span.textContent = 'EN';
-            btn.setAttribute('aria-label', 'Zobraziť originál v angličtine');
-            btn.title = 'Zobraziť originál v angličtine';
+            const t = i18n[currentLang];
+            btn.setAttribute('aria-label', t.showOrigEn);
+            btn.title = t.showOrigEn;
         }
 
         const autoTranslateObserver = new IntersectionObserver((entries) => {
@@ -1701,13 +1684,14 @@
             const orig = card.dataset.origTitle;
             const trans = card.dataset.transTitle || translationCache[orig];
 
+            const t = i18n[currentLang];
             if (btn.classList.contains('active')) {
                 titleEl.textContent = orig;
                 btn.classList.remove('active');
                 const span = btn.querySelector('span');
                 if (span) span.textContent = 'SK';
-                btn.setAttribute('aria-label', 'Preložiť do slovenčiny');
-                btn.title = 'Preložiť do slovenčiny';
+                btn.setAttribute('aria-label', t.translateToSk);
+                btn.title = t.translateToSk;
             } else if (trans) {
                 applyTranslatedState(card, titleEl, btn, trans);
             } else {
@@ -1735,12 +1719,32 @@
             sk: {
                 sidebarTitle: 'Sekcie správ',
                 sourcesTitle: 'Zdroje správ',
+                settingsTitle: 'Nastavenia',
+                fontsTitle: 'Písmo správ',
+                fontsItemTitle: 'Písmo (Fonts)',
+                fontsItemDesc: 'Výber novinárskeho fontu a štýlu',
+                sourcesItemTitle: 'Zdroje správ (Sources)',
+                sourcesItemDesc: 'Spravovať spravodajské weby',
+                serifLabel: 'Pätkové písma (Serif)',
+                sansLabel: 'Bezpätkové písma (Sans-Serif)',
+                activeCount: (n) => `${n} aktívnych`,
                 selectAll: 'Označiť všetky',
                 deselectAll: 'Zrušiť všetky',
                 newArticlesPill: 'Najnovšie správy',
+                backBtn: 'Späť',
+                backToSettings: 'Späť do nastavení',
+                closeModal: 'Zavrieť',
+                boldTitle: 'Zapnúť alebo vypnúť tučné písmo na správach',
+                sourceToggleTitle: 'Zobraziť / skryť tento zdroj v aplikácii',
+                closeFilterTitle: 'Zavrieť filter zdroja',
+                sourceFallback: 'Zdroj',
+                sourceFilterArticles: (name) => `Zobraziť všetky správy zo zdroja ${name}`,
+                showOrigEn: 'Zobraziť originál v angličtine',
+                translating: 'Prekladá sa...',
+                translateToSk: 'Preložiť do slovenčiny',
                 ready: 'Pripravené',
                 loading: 'Načítavam',
-                loadingSources: 'Načítavam správy zo zvolených zdrojov...',
+                loadingSources: 'Načítavam zoznam zdrojov...',
                 fastUpdate: 'Blesková aktualizácia',
                 updating: 'Aktualizujem',
                 progressCount: (prefix, done, total) => `${prefix} (${done}/${total})...`,
@@ -1762,12 +1766,32 @@
             en: {
                 sidebarTitle: 'Categories',
                 sourcesTitle: 'News Sources',
+                settingsTitle: 'Settings',
+                fontsTitle: 'Article Fonts',
+                fontsItemTitle: 'Fonts',
+                fontsItemDesc: 'Select newspaper font and style',
+                sourcesItemTitle: 'News Sources',
+                sourcesItemDesc: 'Manage news websites',
+                serifLabel: 'Serif Fonts',
+                sansLabel: 'Sans-Serif Fonts',
+                activeCount: (n) => `${n} active`,
                 selectAll: 'Select all',
                 deselectAll: 'Deselect all',
                 newArticlesPill: 'Latest news',
+                backBtn: 'Back',
+                backToSettings: 'Back to settings',
+                closeModal: 'Close',
+                boldTitle: 'Toggle bold font weight on articles',
+                sourceToggleTitle: 'Show / hide this source in the app',
+                closeFilterTitle: 'Close source filter',
+                sourceFallback: 'Source',
+                sourceFilterArticles: (name) => `Show all articles from ${name}`,
+                showOrigEn: 'Show English original',
+                translating: 'Translating...',
+                translateToSk: 'Translate to Slovak',
                 ready: 'Ready',
                 loading: 'Loading',
-                loadingSources: 'Loading news from selected sources...',
+                loadingSources: 'Loading sources list...',
                 fastUpdate: 'Fast updating',
                 updating: 'Updating',
                 progressCount: (prefix, done, total) => `${prefix} (${done}/${total})...`,
@@ -1802,8 +1826,40 @@
             if (langBtn) langBtn.innerText = currentLang.toUpperCase();
 
             const t = i18n[currentLang];
-            const sbTitle = document.getElementById('sidebar-title');
-            if (sbTitle) sbTitle.innerText = t.sidebarTitle;
+            
+            const settingsTitle = document.getElementById('settings-modal-title-text');
+            if (settingsTitle) settingsTitle.innerText = t.settingsTitle;
+
+            const fontsModalTitle = document.getElementById('fonts-modal-title-text');
+            if (fontsModalTitle) fontsModalTitle.innerText = t.fontsTitle;
+
+            const fontsItemTitle = document.getElementById('settings-fonts-item-title');
+            if (fontsItemTitle) fontsItemTitle.innerText = t.fontsItemTitle;
+
+            const fontsItemDesc = document.getElementById('settings-current-font-desc');
+            if (fontsItemDesc) fontsItemDesc.innerText = t.fontsItemDesc;
+
+            const sourcesItemTitle = document.getElementById('settings-sources-item-title');
+            if (sourcesItemTitle) sourcesItemTitle.innerText = t.sourcesItemTitle;
+
+            const sourcesItemDesc = document.getElementById('settings-sources-item-desc');
+            if (sourcesItemDesc) sourcesItemDesc.innerText = t.sourcesItemDesc;
+
+            const serifLabel = document.getElementById('font-serif-label');
+            if (serifLabel) serifLabel.innerText = t.serifLabel;
+
+            const sansLabel = document.getElementById('font-sans-label');
+            if (sansLabel) sansLabel.innerText = t.sansLabel;
+
+            const boldLabel = document.querySelector('.bold-toggle-label');
+            if (boldLabel) boldLabel.title = t.boldTitle;
+
+            document.querySelectorAll('.modal-close[aria-label]').forEach(btn => {
+                btn.setAttribute('aria-label', t.closeModal);
+            });
+            document.querySelectorAll('.modal-close[title]').forEach(btn => {
+                btn.title = t.backToSettings;
+            });
 
             const pillBtn = document.getElementById('new-articles-pill');
             if (pillBtn) {
@@ -1823,7 +1879,11 @@
             const catName = catInfo ? catInfo.name[currentLang] : '';
             document.getElementById('current-category-title').innerHTML = `${catInfo.icon} <span>${catName}</span>`;
 
-            applyFilterAndRender(false);
+            if (selectedSourceFilter) {
+                filterBySource(null, selectedSourceFilter, false);
+            } else {
+                applyFilterAndRender(false);
+            }
         }
 
         function renderCategoriesMenu() {
@@ -2085,7 +2145,7 @@
                 modalTitle.innerText = `${t.sourcesTitle} (${checkedCount})`;
             }
             if (badge) {
-                badge.innerText = `${checkedCount} aktívnych`;
+                badge.innerText = t.activeCount(checkedCount);
             }
             updateGroupCheckboxes();
         }
@@ -2139,22 +2199,23 @@
 
             const banner = document.getElementById('source-filter-bar');
             const mainHeader = document.getElementById('main-content-header');
+            const t = i18n[currentLang];
             const srcObj = sources.find(s => s.id === sourceId);
-            const srcName = srcObj ? srcObj.name : 'Zdroj';
+            const srcName = srcObj ? srcObj.name : t.sourceFallback;
 
             if (banner) {
                 const isChecked = getCheckedSources().some(s => s.id === sourceId);
                 banner.innerHTML = `
                     <div class="source-filter-top-row">
-                        <button class="btn-filter-back" onclick="goBackFromSourceFilter()" title="Späť na všetky správy" aria-label="Späť">
+                        <button class="btn-filter-back" onclick="goBackFromSourceFilter()" title="${t.backBtn}" aria-label="${t.backBtn}">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                            <span>Späť</span>
+                            <span>${t.backBtn}</span>
                         </button>
                         <div class="source-filter-actions">
-                            <label class="filter-source-toggle" title="Zobraziť / skryť tento zdroj v aplikácii">
+                            <label class="filter-source-toggle" title="${t.sourceToggleTitle}">
                                 <input type="checkbox" id="filter-source-cb" ${isChecked ? 'checked' : ''} onchange="toggleActiveSourceCheckbox(this.checked)">
                             </label>
-                            <button class="btn-filter-close" onclick="goBackFromSourceFilter()" title="Zavrieť filter" aria-label="Zavrieť">
+                            <button class="btn-filter-close" onclick="goBackFromSourceFilter()" title="${t.closeFilterTitle}" aria-label="${t.closeFilterTitle}">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
                         </div>
@@ -2599,11 +2660,11 @@
                     if (cachedTrans) {
                         titleToDisplay = cachedTrans;
                         extraDataAttrs = `data-orig-title="${safeOrigTitle}" data-trans-title="${cachedTrans.replace(/"/g, '&quot;')}"`;
-                        translateBtn = `<button type="button" class="btn-translate active" onclick="toggleTranslation(event, this)" title="Zobraziť originál v angličtine" aria-label="Zobraziť originál v angličtine"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>EN</span></button>`;
+                        translateBtn = `<button type="button" class="btn-translate active" onclick="toggleTranslation(event, this)" title="${t.showOrigEn}" aria-label="${t.showOrigEn}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>EN</span></button>`;
                     } else {
                         extraCardClass = 'needs-auto-trans';
                         extraDataAttrs = `data-orig-title="${safeOrigTitle}"`;
-                        translateBtn = `<button type="button" class="btn-translate loading" onclick="toggleTranslation(event, this)" title="Prekladá sa..." aria-label="Prekladá sa..."><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>...</span></button>`;
+                        translateBtn = `<button type="button" class="btn-translate loading" onclick="toggleTranslation(event, this)" title="${t.translating}" aria-label="${t.translating}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"></path><path d="m4 14 6-6 2-3"></path><path d="M2 5h12"></path><path d="M7 2h1"></path><path d="m22 22-5-10-5 10"></path><path d="M14 18h6"></path></svg><span>...</span></button>`;
                     }
                 }
 
@@ -2614,7 +2675,7 @@
                         </div>
                         <div class="card-content">
                             <div class="badges-row">
-                                <span class="card-badge accent source-clickable" onclick="filterBySource(event, '${article.sourceId}')" title="Zobraziť všetky správy zo zdroja ${article.sourceName}">${article.sourceName}</span>
+                                <span class="card-badge accent source-clickable" onclick="filterBySource(event, '${article.sourceId}')" title="${t.sourceFilterArticles(article.sourceName)}">${article.sourceName}</span>
                                 ${categoryBadge}
                             </div>
                             <h3 class="card-title">${titleToDisplay}</h3>
