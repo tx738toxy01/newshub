@@ -2942,8 +2942,8 @@ const searchI18n = {
 
             grid.innerHTML = articlesCache.map(article => {
                 const dateObj = isNaN(article.pubDate) ? new Date() : article.pubDate;
-                const dateStr = dateObj.toLocaleDateString(t.locale);
-                const timeStr = dateObj.toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit' });
+                const dateStr = dateObj.toLocaleDateString(t.locale, { day: 'numeric', month: 'short', year: 'numeric' });
+                const timeStr = dateObj.toLocaleTimeString(t.locale, { hour: '2-digit', minute: '2-digit', hour12: false });
 
                 const categoryBadge = article.categories.length > 0
                     ? `<span class="card-badge">${article.categories[0]}</span>`
