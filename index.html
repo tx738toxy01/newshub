@@ -2804,9 +2804,9 @@ const searchI18n = {
                 `;
 
                 const safeImage = (article.image && !article.image.includes('unsplash.com')) ? article.image : '';
-
+                
                 const imageMarkup = safeImage
-                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;">${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-ambient" loading="lazy"><div class="placeholder-icon-wrap"><img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy"></div>` : ''}</div>`
+                    ? `<img src="${safeImage}" data-orig="${safeImage}" alt="" class="card-img" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried=1; this.src='https://images.weserv.nl/?url='+encodeURIComponent(this.dataset.orig)+'&w=600';}else{this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';}"><div class="card-img-placeholder" style="display:none;">${faviconUrl ? `<img src="${faviconUrl}" alt="" class="placeholder-ambient" loading="lazy"><div class="placeholder-icon-wrap"><img src="${faviconUrl}" alt="" class="placeholder-icon" loading="lazy"></div>` : ''}</div>`
                     : placeholderMarkup;
 
                 const isRead = readArticles.has(normalizeArticleLink(article.link));
