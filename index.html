@@ -1472,6 +1472,25 @@
         </div>
     </div>
 
+    <div class="layout">
+        <main class="main-content">
+            <button id="new-articles-pill" class="new-articles-pill" onclick="showNewestArticles()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+                <span>Najnovšie správy</span>
+            </button>
+            <div id="source-filter-bar" class="source-filter-bar" style="display: none;"></div>
+            <div class="content-header" id="main-content-header">
+                <h2 id="current-category-title">⚡ Najnovšie</h2>
+                <div class="status-text" id="status-text">Pripravené</div>
+            </div>
+            <div class="grid" id="news-grid">
+                <div class="empty-state">Načítavam zoznam zdrojov...</div>
+            </div>
+        </main>
+    </div>
+
     <script>
         const DEFAULT_IMAGE = '';
         const STORAGE_SOURCES_KEY = 'newshub_selected_sources';
