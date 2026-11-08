@@ -12,7 +12,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..800;1,6..72,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-page: #090d16;
@@ -790,26 +790,51 @@
             gap: 10px;
         }
 
-        .btn-filter-uncheck {
-            background: rgba(239, 68, 68, 0.12);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
-            padding: 6px 14px;
-            border-radius: var(--radius-sm);
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
+        .filter-source-toggle {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            transition: var(--transition-smooth);
+            gap: 8px;
+            cursor: pointer;
             user-select: none;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-page);
+            border: 1px solid var(--border-light);
+            transition: var(--transition-smooth);
         }
 
-        .btn-filter-uncheck:hover {
-            background: rgba(239, 68, 68, 0.24);
-            border-color: #ef4444;
-            color: #fca5a5;
+        .filter-source-toggle:hover {
+            border-color: var(--primary-accent);
+        }
+
+        .filter-source-toggle input {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid #374151;
+            border-radius: 6px;
+            cursor: pointer;
+            outline: none;
+            display: inline-grid;
+            place-content: center;
+            transition: var(--transition-smooth);
+            background: #1f2937;
+            margin: 0;
+        }
+
+        .filter-source-toggle input:checked {
+            background: var(--primary-accent);
+            border-color: var(--primary-accent);
+        }
+
+        .filter-source-toggle input:checked::before {
+            content: "";
+            width: 10px;
+            height: 6px;
+            border-left: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(-45deg) translate(1px, -1px);
         }
 
         .btn-filter-close {
@@ -883,9 +908,11 @@
         }
 
         .card-title {
-            font-size: 0.94rem;
-            font-weight: 700;
-            line-height: 1.35;
+            font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            line-height: 1.32;
+            letter-spacing: -0.2px;
             margin-bottom: 8px;
             color: var(--primary);
             transition: color 0.15s;
@@ -899,6 +926,7 @@
 
         .card-desc {
             display: none;
+            font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
         }
 
         .card-footer {
@@ -1681,6 +1709,7 @@
             const srcName = srcObj ? srcObj.name : 'Zdroj';
 
             if (banner) {
+                const isChecked = getCheckedSources().some(s => s.id === sourceId);
                 banner.innerHTML = `
                     <div class="source-filter-left">
                         <button class="btn-filter-back" onclick="goBackFromSourceFilter()" title="Späť na všetky správy" aria-label="Späť">
@@ -1693,10 +1722,9 @@
                         </div>
                     </div>
                     <div class="source-filter-right">
-                        <button class="btn-filter-uncheck" onclick="uncheckActiveSource()" title="Odškrtnúť tento zdroj a skryť ho zo správ">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                            <span>Odškrtnúť zdroj</span>
-                        </button>
+                        <label class="filter-source-toggle" title="Zobraziť / skryť tento zdroj v aplikácii">
+                            <input type="checkbox" id="filter-source-cb" ${isChecked ? 'checked' : ''} onchange="toggleActiveSourceCheckbox(this.checked)">
+                        </label>
                         <button class="btn-filter-close" onclick="goBackFromSourceFilter()" title="Zavrieť filter" aria-label="Zavrieť">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                         </button>
@@ -1718,24 +1746,26 @@
             }
         }
 
-        function uncheckActiveSource() {
+        function toggleActiveSourceCheckbox(state) {
             if (!selectedSourceFilter) return;
             const srcId = selectedSourceFilter;
             const cb = document.getElementById(srcId);
-            if (cb) cb.checked = false;
+            if (cb) cb.checked = state;
 
             try {
                 const saved = localStorage.getItem(STORAGE_SOURCES_KEY);
-                if (saved) {
-                    const arr = JSON.parse(saved);
-                    const filtered = arr.filter(id => id !== srcId);
-                    localStorage.setItem(STORAGE_SOURCES_KEY, JSON.stringify(filtered));
+                let arr = saved ? JSON.parse(saved) : [];
+                if (!Array.isArray(arr)) arr = [];
+                if (state) {
+                    if (!arr.includes(srcId)) arr.push(srcId);
+                } else {
+                    arr = arr.filter(id => id !== srcId);
                 }
+                localStorage.setItem(STORAGE_SOURCES_KEY, JSON.stringify(arr));
             } catch (e) {}
 
             saveSelectedSources();
             updateDropdownButton();
-            clearSourceFilter();
         }
 
         function showNewestArticles() {
