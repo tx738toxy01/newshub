@@ -196,8 +196,13 @@ async function fetchSource(src) {
     try {
         const res = await fetch(src.url, {
             headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) NewsHub/1.0',
-                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*;q=0.8',
+                'Accept-Language': 'sk,cs;q=0.9,en;q=0.8',
+                'Cache-Control': 'no-cache',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none'
             },
             signal: AbortSignal.timeout(TIMEOUT_MS)
         });
