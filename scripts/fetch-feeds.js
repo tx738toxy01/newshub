@@ -194,37 +194,64 @@ function parseFeedXml(xml, src) {
 
 async function fetchSource(src) {
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
-    let xml = '';
+    let content = '';
+    let isJson = false;
 
     try {
         const res = await fetch(src.url, {
-            headers: {
-                'User-Agent': userAgent,
-                'Accept': 'application/rss+xml, application/xml, text/xml, */*'
-            },
+            headers: { 'User-Agent': userAgent, 'Accept': 'application/rss+xml, application/xml, text/xml, */*' },
             signal: AbortSignal.timeout(TIMEOUT_MS)
         });
         if (res.ok) {
-            xml = await res.text();
+            content = await res.text();
         }
     } catch (e) {}
 
-    if (!xml || xml.includes('Just a moment...') || xml.includes('cloudflare')) {
+    if (!content || content.includes('Just a moment...') || content.includes('cloudflare')) {
         try {
-            const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(src.url);
+            const proxyUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(src.url);
             const resProxy = await fetch(proxyUrl, {
                 headers: { 'User-Agent': userAgent },
                 signal: AbortSignal.timeout(TIMEOUT_MS)
             });
             if (resProxy.ok) {
-                xml = await resProxy.text();
+                content = await resProxy.text();
+                isJson = true;
             }
         } catch (e) {}
     }
 
-    if (!xml) return [];
+    if (!content) return [];
     
-    return parseFeedXml(xml, src);
+    if (isJson || content.trim().startsWith('{')) {
+        try {
+            const data = JSON.parse(content);
+            if (data.status !== 'ok' || !data.items) return [];
+            
+            return data.items.slice(0, 30).map(item => {
+                const title = cleanTitle(item.title, src.name);
+                const desc = cleanHtml(item.description || item.content || '', src.name);
+                const safeDate = new Date(item.pubDate);
+                let image = item.thumbnail || extractImage(item.content || item.description || '');
+                
+                return {
+                    sourceId: src.id,
+                    sourceName: src.name,
+                    sourceDefaultCats: src.defaultCats || [],
+                    title: title,
+                    link: item.link,
+                    pubDate: (isNaN(safeDate.getTime()) ? new Date() : safeDate).toISOString(),
+                    description: desc === title ? '' : desc,
+                    categories: Array.isArray(item.categories) ? item.categories.map(c => c.toLowerCase()) : [],
+                    image: image.includes('unsplash.com') ? '' : image
+                };
+            });
+        } catch(e) {
+            return [];
+        }
+    }
+    
+    return parseFeedXml(content, src);
 }
 
 async function runPool(items, limit, fn) {
