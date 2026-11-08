@@ -415,6 +415,19 @@
             transform: rotate(-45deg) translate(1px, -1px);
         }
 
+        .source-item-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: var(--radius-sm);
+            transition: var(--transition-smooth);
+            padding-right: 6px;
+        }
+
+        .source-item-row:hover {
+            background: var(--bg-page);
+        }
+
         .source-item {
             display: flex;
             align-items: center;
@@ -423,13 +436,30 @@
             font-size: 0.875rem;
             font-weight: 500;
             color: var(--text-main);
-            border-radius: var(--radius-sm);
             cursor: pointer;
-            transition: var(--transition-smooth);
+            flex: 1;
+            margin: 0;
         }
 
-        .source-item:hover {
-            background: var(--bg-page);
+        .btn-source-filter {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-muted);
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            flex-shrink: 0;
+        }
+
+        .btn-source-filter:hover {
+            background: var(--surface-hover);
+            color: var(--primary-accent);
+            border-color: var(--border-light);
         }
 
         .sidebar-overlay {
@@ -2037,10 +2067,18 @@ const searchI18n = {
 
                 sources.filter(s => s.group === groupName).forEach(src => {
                     const isChecked = checkedIds.has(src.id);
-                    const label = document.createElement('label');
-                    label.className = 'source-item';
-                    label.innerHTML = `<input type="checkbox" id="${src.id}" value="${src.id}" ${isChecked ? 'checked' : ''} onchange="triggerFetch()"> <span>${src.name}</span>`;
-                    groupDiv.appendChild(label);
+                    const row = document.createElement('div');
+                    row.className = 'source-item-row';
+                    row.innerHTML = `
+                        <label class="source-item">
+                            <input type="checkbox" id="${src.id}" value="${src.id}" ${isChecked ? 'checked' : ''} onchange="triggerFetch()">
+                            <span>${src.name}</span>
+                        </label>
+                        <button class="btn-source-filter" onclick="closeAllModals(); filterBySource(event, '${src.id}')" title="${t.sourceFilterArticles(src.name)}" aria-label="${t.sourceFilterArticles(src.name)}">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </button>
+                    `;
+                    groupDiv.appendChild(row);
                 });
                 srcContainer.appendChild(groupDiv);
             });
