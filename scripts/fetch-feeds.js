@@ -277,6 +277,19 @@ async function main() {
         process.exit(1);
     }
 
+    const oldDates = new Map();
+    try {
+        if (fs.existsSync(OUTPUT_FILE)) {
+            const old = JSON.parse(fs.readFileSync(OUTPUT_FILE, 'utf-8'));
+            if (Array.isArray(old.articles)) {
+                old.articles.forEach(a => {
+                    const cUrl = a.link.split('#')[0].replace(/\/+$/, '');
+                    oldDates.set(cUrl, a.pubDate);
+                });
+            }
+        }
+    } catch(e) {}
+
     const feedResults = await runPool(sources, CONCURRENCY_LIMIT, fetchSource);
     const seenLinks = new Set();
     const allArticles = [];
@@ -286,6 +299,15 @@ async function main() {
             const cleanUrl = a.link.split('#')[0].replace(/\/+$/, '');
             if (!seenLinks.has(cleanUrl)) {
                 seenLinks.add(cleanUrl);
+                
+                if (oldDates.has(cleanUrl)) {
+                    const oldTime = new Date(oldDates.get(cleanUrl)).getTime();
+                    const newTime = new Date(a.pubDate).getTime();
+                    if (oldTime < newTime) {
+                        a.pubDate = new Date(oldTime).toISOString();
+                    }
+                }
+                
                 allArticles.push(a);
             }
         }
