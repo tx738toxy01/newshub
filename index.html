@@ -152,6 +152,36 @@
             color: var(--primary-accent);
             box-shadow: var(--shadow-md);
         }
+.header-search {
+            display: none;
+            flex: 1;
+            align-items: center;
+            gap: 4px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--surface);
+            border: 1px solid var(--primary-accent);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: var(--radius-full);
+            font-size: 0.95rem;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+            transition: var(--transition-smooth);
+            width: 100%;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-subtle);
+        }
 
         .modal-overlay {
             display: none;
@@ -977,26 +1007,19 @@
 
         @media (max-width: 768px) {
             .source-filter-bar {
-                padding: 10px 12px;
-                flex-direction: row;
-                align-items: center;
-                justify-content: space-between;
-                gap: 8px;
-            }
-            .source-filter-left {
-                gap: 8px;
+                padding: 12px 14px;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
             }
             .btn-filter-back span {
                 display: none;
             }
             .btn-filter-back {
-                padding: 6px;
+                padding: 6px 10px;
             }
             .source-filter-title {
-                font-size: 1rem;
-            }
-            .source-filter-right {
-                gap: 6px;
+                font-size: 1.1rem;
             }
         }
 
@@ -1331,14 +1354,27 @@
 <body>
 
     <header>
-        <div class="header-left">
+        <div class="header-left" id="header-left">
             <div class="logo-wrap">
                 <div class="logo-badge">N</div>
                 <div class="logo-text">News<span>Hub</span></div>
             </div>
         </div>
-        <div class="header-actions">
-            <button class="btn-action" id="lang-toggle-btn" onclick="toggleLanguage()" aria-label="Jazyk" style="font-weight: 800; font-size: 0.8rem;">SK</button>
+        
+        <div class="header-search" id="header-search">
+            <button class="btn-action" onclick="toggleSearch()" aria-label="Zavrieť vyhľadávanie" style="border:none; box-shadow:none; background:transparent;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <input type="text" id="search-input" class="search-input" placeholder="Hľadať v správach..." oninput="handleSearch()">
+            <button class="btn-action" onclick="clearSearch()" aria-label="Vymazať" style="border:none; box-shadow:none; background:transparent; color: var(--text-muted);">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+
+        <div class="header-actions" id="header-actions">
+            <button class="btn-action" id="search-btn" onclick="toggleSearch()" aria-label="Vyhľadávanie" title="Hľadať v správach">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
             <button class="btn-action" id="view-toggle-btn" onclick="toggleView()" aria-label="Zobrazenie">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <rect x="3" y="3" width="7" height="7"></rect>
@@ -1378,6 +1414,19 @@
             </div>
             <div class="modal-body">
                 <div class="settings-menu-list">
+                    <div class="settings-menu-item" onclick="toggleLanguage()">
+                        <div class="settings-item-left">
+                            <div class="settings-item-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            </div>
+                            <div class="settings-item-text">
+                                <strong id="settings-lang-item-title">Jazyk (Language)</strong>
+                                <span id="settings-lang-item-desc">Prepínanie slovenčiny a angličtiny</span>
+                            </div>
+                        </div>
+                        <span class="settings-item-badge" id="settings-current-lang-badge" style="text-transform: uppercase;">SK</span>
+                    </div>
+
                     <div class="settings-menu-item" onclick="openModal('fonts-modal')">
                         <div class="settings-item-left">
                             <div class="settings-item-icon">
@@ -1835,17 +1884,45 @@
             setLanguage(currentLang === 'sk' ? 'en' : 'sk');
         }
 
+const searchI18n = {
+            sk: {
+                langItemTitle: 'Jazyk (Language)',
+                langItemDesc: 'Prepínanie slovenčiny a angličtiny',
+                searchPlaceholder: 'Hľadať v správach...',
+                searchTitle: 'Vyhľadávanie',
+                noSearchResults: 'Pre tento výraz sa nenašli žiadne články.'
+            },
+            en: {
+                langItemTitle: 'Language (Jazyk)',
+                langItemDesc: 'Switch between English and Slovak',
+                searchPlaceholder: 'Search news...',
+                searchTitle: 'Search',
+                noSearchResults: 'No articles found for this search term.'
+            }
+        };
+
         function setLanguage(lang) {
             currentLang = lang === 'en' ? 'en' : 'sk';
             try {
                 localStorage.setItem(STORAGE_LANG_KEY, currentLang);
             } catch (e) {}
 
-            const langBtn = document.getElementById('lang-toggle-btn');
-            if (langBtn) langBtn.innerText = currentLang.toUpperCase();
+            const langBadge = document.getElementById('settings-current-lang-badge');
+            if (langBadge) langBadge.innerText = currentLang.toUpperCase();
+
+            const langTitle = document.getElementById('settings-lang-item-title');
+            if (langTitle) langTitle.innerText = searchI18n[currentLang].langItemTitle;
+
+            const langDesc = document.getElementById('settings-lang-item-desc');
+            if (langDesc) langDesc.innerText = searchI18n[currentLang].langItemDesc;
+
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.placeholder = searchI18n[currentLang].searchPlaceholder;
+
+            const searchBtn = document.getElementById('search-btn');
+            if (searchBtn) searchBtn.title = searchI18n[currentLang].searchTitle;
 
             const t = i18n[currentLang];
-            
             const settingsTitle = document.getElementById('settings-modal-title-text');
             if (settingsTitle) settingsTitle.innerText = t.settingsTitle;
 
@@ -2552,32 +2629,79 @@
             loadArticles(false);
         }
 
+        let searchQuery = '';
+        let isSearchActive = false;
+
+        function toggleSearch() {
+            isSearchActive = !isSearchActive;
+            const headerLeft = document.getElementById('header-left');
+            const headerActions = document.getElementById('header-actions');
+            const headerSearch = document.getElementById('header-search');
+            const searchInput = document.getElementById('search-input');
+
+            if (isSearchActive) {
+                headerLeft.style.display = 'none';
+                headerActions.style.display = 'none';
+                headerSearch.style.display = 'flex';
+                setTimeout(() => searchInput.focus(), 50);
+            } else {
+                headerLeft.style.display = 'flex';
+                headerActions.style.display = 'flex';
+                headerSearch.style.display = 'none';
+                if (searchQuery !== '') {
+                    searchQuery = '';
+                    searchInput.value = '';
+                    applyFilterAndRender(false);
+                }
+            }
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            searchQuery = '';
+            applyFilterAndRender(false);
+            document.getElementById('search-input').focus();
+        }
+
+        function handleSearch() {
+            searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+            applyFilterAndRender(false);
+        }
+
         function getFilteredArticles() {
+            let baseArticles = [];
+            
             if (selectedSourceFilter) {
-                return rawArticlesCache.filter(a => a.sourceId === selectedSourceFilter);
+                baseArticles = rawArticlesCache.filter(a => a.sourceId === selectedSourceFilter);
+            } else {
+                const checkedSources = getCheckedSources();
+                if (checkedSources.length === 0) return [];
+                const checkedIds = new Set(checkedSources.map(s => s.id));
+                baseArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
+
+                if (activeCategory !== 'all') {
+                    const sourceCatsMap = new Map();
+                    sources.forEach(s => {
+                        if (s.defaultCats) sourceCatsMap.set(s.id, s.defaultCats);
+                    });
+                    baseArticles = baseArticles.filter(article => {
+                        const cats = (article.sourceDefaultCats && article.sourceDefaultCats.length > 0)
+                            ? article.sourceDefaultCats
+                            : (sourceCatsMap.get(article.sourceId) || []);
+                        return cats.includes(activeCategory);
+                    });
+                }
             }
 
-            const checkedSources = getCheckedSources();
-            if (checkedSources.length === 0) return [];
-            const checkedIds = new Set(checkedSources.map(s => s.id));
-            let validArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
-            if (validArticles.length === 0) return [];
-
-            if (activeCategory === 'all') {
-                return validArticles;
+            if (searchQuery) {
+                const q = searchQuery.toLowerCase();
+                return baseArticles.filter(a => 
+                    a.title.toLowerCase().includes(q) || 
+                    a.sourceName.toLowerCase().includes(q)
+                );
             }
 
-            const sourceCatsMap = new Map();
-            sources.forEach(s => {
-                if (s.defaultCats) sourceCatsMap.set(s.id, s.defaultCats);
-            });
-
-            return validArticles.filter(article => {
-                const cats = (article.sourceDefaultCats && article.sourceDefaultCats.length > 0)
-                    ? article.sourceDefaultCats
-                    : (sourceCatsMap.get(article.sourceId) || []);
-                return cats.includes(activeCategory);
-            });
+            return baseArticles;
         }
 
         function applyFilterAndRender(isStillLoading = false, completed = 0, total = 0) {
@@ -2605,11 +2729,17 @@
 
             let filteredArticles = getFilteredArticles();
 
-            if (filteredArticles.length === 0 && activeCategory !== 'all') {
-                const catInfo = categories.find(c => c.id === activeCategory);
-                const catName = catInfo ? catInfo.name[currentLang] : '';
+            if (filteredArticles.length === 0) {
                 if (!isStillLoading) {
-                    grid.innerHTML = `<div class="empty-state">${t.noCategoryArticles(catName)}</div>`;
+                    if (searchQuery) {
+                        grid.innerHTML = `<div class="empty-state">${searchI18n[currentLang].noSearchResults}</div>`;
+                    } else if (activeCategory !== 'all') {
+                        const catInfo = categories.find(c => c.id === activeCategory);
+                        const catName = catInfo ? catInfo.name[currentLang] : '';
+                        grid.innerHTML = `<div class="empty-state">${t.noCategoryArticles(catName)}</div>`;
+                    } else {
+                        grid.innerHTML = `<div class="empty-state">${t.blockedMsg}</div>`;
+                    }
                     status.innerText = t.shownCount(0);
                 }
                 articlesCache = [];
