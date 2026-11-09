@@ -2089,39 +2089,35 @@ const searchI18n = {
                 btn.title = cat.name[currentLang];
                 btn.innerHTML = `${cat.icon} <span>${cat.name[currentLang]}</span>`;
                 
-                if (cat.id !== 'all') {
-                    let pressTimer;
-                    let isLongPress = false;
-                    
-                    const startPress = (e) => {
-                        if (e.type === 'contextmenu') { 
-                            e.preventDefault(); 
-                            showCategorySourcesModal(cat.id); 
-                            return; 
-                        }
-                        isLongPress = false;
-                        pressTimer = setTimeout(() => { 
-                            isLongPress = true; 
-                            showCategorySourcesModal(cat.id); 
-                        }, 500); // 0.5 sekundy pre aktivaciu
-                    };
-                    
-                    const cancelPress = () => clearTimeout(pressTimer);
+                let pressTimer;
+                let isLongPress = false;
+                
+                const startPress = (e) => {
+                    if (e.type === 'contextmenu') { 
+                        e.preventDefault(); 
+                        showCategorySourcesModal(cat.id); 
+                        return; 
+                    }
+                    isLongPress = false;
+                    pressTimer = setTimeout(() => { 
+                        isLongPress = true; 
+                        showCategorySourcesModal(cat.id); 
+                    }, 500);
+                };
+                
+                const cancelPress = () => clearTimeout(pressTimer);
 
-                    btn.addEventListener('mousedown', (e) => { if(e.button === 0) startPress(e); });
-                    btn.addEventListener('touchstart', startPress, {passive: true});
-                    btn.addEventListener('mouseup', cancelPress);
-                    btn.addEventListener('mouseleave', cancelPress);
-                    btn.addEventListener('touchend', cancelPress);
-                    btn.addEventListener('contextmenu', startPress);
-                    
-                    btn.onclick = (e) => { 
-                        cancelPress(); 
-                        if (!isLongPress) selectCategory(cat.id); 
-                    };
-                } else {
-                    btn.onclick = () => selectCategory(cat.id);
-                }
+                btn.addEventListener('mousedown', (e) => { if(e.button === 0) startPress(e); });
+                btn.addEventListener('touchstart', startPress, {passive: true});
+                btn.addEventListener('mouseup', cancelPress);
+                btn.addEventListener('mouseleave', cancelPress);
+                btn.addEventListener('touchend', cancelPress);
+                btn.addEventListener('contextmenu', startPress);
+                
+                btn.onclick = (e) => { 
+                    cancelPress(); 
+                    if (!isLongPress) selectCategory(cat.id); 
+                };
                 
                 catMenu.appendChild(btn);
             });
@@ -2136,8 +2132,13 @@ function showCategorySourcesModal(catId) {
             
             title.innerText = catInfo.name[currentLang];
             
-            const sourceIds = getCategorySourceIds(catId);
-            const catSources = sources.filter(s => sourceIds.includes(s.id));
+            let catSources = [];
+            if (catId === 'all') {
+                catSources = getCheckedSources();
+            } else {
+                const sourceIds = getCategorySourceIds(catId);
+                catSources = sources.filter(s => sourceIds.includes(s.id));
+            }
             
             container.innerHTML = '';
             
@@ -2170,6 +2171,7 @@ function showCategorySourcesModal(catId) {
 
         function getCategorySourceIds(catId) {
             if (categoryOverrides[catId]) return categoryOverrides[catId];
+            if (catId === 'all') return sources.map(s => s.id);
             return sources.filter(s => {
                 if (s.defaultCats && s.defaultCats.includes(catId)) return true;
                 if (catId === 'cz' && (s.group === 'Česko' || String(s.id).startsWith('cz_'))) return true;
@@ -2199,7 +2201,6 @@ function showCategorySourcesModal(catId) {
             listDiv.className = 'settings-menu-list';
 
             categories.forEach(cat => {
-                if (cat.id === 'all') return;
                 const count = getCategorySourceIds(cat.id).length;
                 
                 const item = document.createElement('div');
@@ -2496,7 +2497,6 @@ function showCategorySourcesModal(catId) {
         function getCheckedSources() {
             const activeIds = new Set();
             categories.forEach(cat => {
-                if (cat.id === 'all') return;
                 getCategorySourceIds(cat.id).forEach(id => activeIds.add(id));
             });
             return sources.filter(s => activeIds.has(s.id));
@@ -2597,9 +2597,12 @@ function showCategorySourcesModal(catId) {
                     if (!current.includes(srcId)) current.push(srcId);
                     categoryOverrides[catId] = current;
                 });
+                
+                let currentAll = getCategorySourceIds('all');
+                if (!currentAll.includes(srcId)) currentAll.push(srcId);
+                categoryOverrides['all'] = currentAll;
             } else {
                 categories.forEach(cat => {
-                    if (cat.id === 'all') return;
                     let current = getCategorySourceIds(cat.id);
                     if (current.includes(srcId)) {
                         categoryOverrides[cat.id] = current.filter(id => id !== srcId);
@@ -2938,13 +2941,8 @@ function showCategorySourcesModal(catId) {
                 const checkedSources = getCheckedSources();
                 if (checkedSources.length === 0) return [];
                 
-                if (activeCategory !== 'all') {
-                    const allowedIds = new Set(getCategorySourceIds(activeCategory));
-                    baseArticles = rawArticlesCache.filter(a => allowedIds.has(a.sourceId));
-                } else {
-                    const checkedIds = new Set(checkedSources.map(s => s.id));
-                    baseArticles = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
-                }
+                const allowedIds = new Set(getCategorySourceIds(activeCategory));
+                baseArticles = rawArticlesCache.filter(a => allowedIds.has(a.sourceId));
             }
 
             if (searchQuery) {
