@@ -2103,15 +2103,18 @@ const searchI18n = {
                 
                 const startPress = (e) => {
                     if (e.type === 'contextmenu') { 
-                        e.preventDefault(); 
+                        e.preventDefault();
+                        isLongPress = true;
                         showCategorySourcesModal(cat.id); 
                         return; 
                     }
+                    if (e.type === 'mousedown' && isLongPress) return;
+                    
                     isLongPress = false;
                     pressTimer = setTimeout(() => { 
                         isLongPress = true; 
                         showCategorySourcesModal(cat.id); 
-                    }, 500);
+                    }, 450);
                 };
                 
                 const cancelPress = () => clearTimeout(pressTimer);
@@ -2125,7 +2128,13 @@ const searchI18n = {
                 
                 btn.onclick = (e) => { 
                     cancelPress(); 
-                    if (!isLongPress) selectCategory(cat.id); 
+                    if (isLongPress) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setTimeout(() => { isLongPress = false; }, 100);
+                        return;
+                    }
+                    selectCategory(cat.id); 
                 };
                 
                 catMenu.appendChild(btn);
