@@ -336,6 +336,38 @@
             color: var(--text-muted);
         }
 
+        .cat-order-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .btn-cat-move {
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            color: var(--text-main);
+            width: 30px;
+            height: 30px;
+            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-cat-move:hover:not(:disabled) {
+            background: var(--surface-hover);
+            border-color: var(--primary-accent);
+            color: var(--primary-accent);
+        }
+
+        .btn-cat-move:disabled {
+            opacity: 0.25;
+            cursor: default;
+        }
+
         .source-controls {
             display: flex;
             gap: 8px;
@@ -2166,6 +2198,82 @@ const searchI18n = {
             }).map(s => s.id);
         }
 
+        const STORAGE_CAT_ORDER_KEY = 'newshub_cat_order';
+        let draggedCatIndex = null;
+
+        function applySavedCategoryOrder() {
+            try {
+                const saved = localStorage.getItem(STORAGE_CAT_ORDER_KEY);
+                if (!saved) return;
+                const order = JSON.parse(saved);
+                if (!Array.isArray(order)) return;
+                categories.sort((a, b) => {
+                    const idxA = order.indexOf(a.id);
+                    const idxB = order.indexOf(b.id);
+                    if (idxA === -1 && idxB === -1) return 0;
+                    if (idxA === -1) return 1;
+                    if (idxB === -1) return -1;
+                    return idxA - idxB;
+                });
+            } catch (e) {}
+        }
+
+        function saveCategoryOrder() {
+            try {
+                localStorage.setItem(STORAGE_CAT_ORDER_KEY, JSON.stringify(categories.map(c => c.id)));
+            } catch (e) {}
+        }
+
+        function moveCategory(e, index, direction) {
+            if (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= categories.length) return;
+            const [moved] = categories.splice(index, 1);
+            categories.splice(newIndex, 0, moved);
+            saveCategoryOrder();
+            renderSourcesList();
+            renderCategoriesMenu();
+        }
+
+        function handleCatDragStart(e, index) {
+            draggedCatIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            e.currentTarget.style.opacity = '0.5';
+        }
+
+        function handleCatDragEnd(e) {
+            e.currentTarget.style.opacity = '1';
+            draggedCatIndex = null;
+            document.querySelectorAll('#sources-list-container .settings-menu-item').forEach(el => {
+                el.style.borderColor = '';
+            });
+        }
+
+        function handleCatDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.currentTarget.style.borderColor = 'var(--primary-accent)';
+        }
+
+        function handleCatDragLeave(e) {
+            e.currentTarget.style.borderColor = '';
+        }
+
+        function handleCatDrop(e, targetIndex) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (draggedCatIndex === null || draggedCatIndex === targetIndex) return;
+            const [moved] = categories.splice(draggedCatIndex, 1);
+            categories.splice(targetIndex, 0, moved);
+            draggedCatIndex = null;
+            saveCategoryOrder();
+            renderSourcesList();
+            renderCategoriesMenu();
+        }
+
         function renderSourcesList() {
             const srcContainer = document.getElementById('sources-list-container');
             if (!srcContainer) return;
@@ -2187,11 +2295,17 @@ const searchI18n = {
             const listDiv = document.createElement('div');
             listDiv.className = 'settings-menu-list';
 
-            categories.forEach(cat => {
+            categories.forEach((cat, index) => {
                 const count = getCategorySourceIds(cat.id).length;
                 
                 const item = document.createElement('div');
                 item.className = 'settings-menu-item';
+                item.draggable = true;
+                item.ondragstart = (e) => handleCatDragStart(e, index);
+                item.ondragend = (e) => handleCatDragEnd(e);
+                item.ondragover = (e) => handleCatDragOver(e);
+                item.ondragleave = (e) => handleCatDragLeave(e);
+                item.ondrop = (e) => handleCatDrop(e, index);
                 item.onclick = () => renderCategoryEditor(cat.id);
                 item.innerHTML = `
                     <div class="settings-item-left">
@@ -2201,7 +2315,15 @@ const searchI18n = {
                             <span style="font-size: 0.75rem;">${t.editorSourcesSubtitle}</span>
                         </div>
                     </div>
-                    <span class="settings-item-badge">${count}</span>
+                    <div class="cat-order-actions">
+                        <span class="settings-item-badge">${count}</span>
+                        <button type="button" class="btn-cat-move" onclick="moveCategory(event, ${index}, -1)" ${index === 0 ? 'disabled' : ''}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                        </button>
+                        <button type="button" class="btn-cat-move" onclick="moveCategory(event, ${index}, 1)" ${index === categories.length - 1 ? 'disabled' : ''}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                    </div>
                 `;
                 listDiv.appendChild(item);
             });
@@ -2387,6 +2509,7 @@ const searchI18n = {
                 toggleNewsFontBold(true);
             }
 
+            applySavedCategoryOrder();
             loadPreferences();
             loadCachedArticles();
             setLanguage(currentLang);
