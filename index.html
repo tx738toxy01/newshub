@@ -1977,20 +1977,6 @@
                 sourcesEmptyMsg: 'There are currently no active sources in this section.'
             }
         };
-                selectSourceMsg: 'Please select at least one news source.',
-                blockedMsg: 'No articles found. Selected websites may be blocking access.',
-                noCategoryArticles: (cat) => `No articles found for category "${cat}" in the current feed.`,
-                error: 'Error',
-                errorMsg: 'An error occurred. Please refresh the page.',
-                readMore: 'Read more →',
-                locale: 'en-US',
-                groups: {
-                    'Slovensko': 'Slovakia',
-                    'Česko': 'Czechia',
-                    'Svetové (EN)': 'World (EN)'
-                }
-            }
-        };
 
         function toggleLanguage() {
             setLanguage(currentLang === 'sk' ? 'en' : 'sk');
@@ -2109,40 +2095,52 @@ const searchI18n = {
                 let pressTimer;
                 let isLongPress = false;
                 
+                const openEditor = () => {
+                    if (navigator.vibrate) navigator.vibrate(50);
+                    setTimeout(() => {
+                        renderCategoryEditor(cat.id);
+                        openModal('sources-modal');
+                    }, 100);
+                };
+
                 const startPress = (e) => {
                     if (e.type === 'contextmenu') { 
                         e.preventDefault();
                         isLongPress = true;
-                        renderCategoryEditor(cat.id);
-                        openModal('sources-modal');
+                        openEditor();
                         return; 
                     }
-                    if (e.type === 'mousedown' && isLongPress) return;
-                    
                     isLongPress = false;
                     pressTimer = setTimeout(() => { 
                         isLongPress = true; 
-                        if (navigator.vibrate) navigator.vibrate(50);
-                        renderCategoryEditor(cat.id);
-                        openModal('sources-modal');
-                    }, 450);
+                        openEditor();
+                    }, 400);
+                };
+
+                btn.addEventListener('mousedown', (e) => { if (e.button === 0) startPress(e); });
+                btn.addEventListener('touchstart', (e) => startPress(e), { passive: true });
+                
+                btn.addEventListener('touchmove', () => clearTimeout(pressTimer), { passive: true });
+                btn.addEventListener('mouseleave', () => clearTimeout(pressTimer));
+                btn.addEventListener('mouseup', () => clearTimeout(pressTimer));
+                
+                btn.addEventListener('touchend', (e) => {
+                    clearTimeout(pressTimer);
+                    if (isLongPress) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+                
+                btn.oncontextmenu = (e) => { 
+                    e.preventDefault();
+                    return false; 
                 };
                 
-                const cancelPress = () => clearTimeout(pressTimer);
-
-                btn.addEventListener('mousedown', (e) => { if(e.button === 0) startPress(e); });
-                btn.addEventListener('touchstart', startPress, {passive: true});
-                btn.addEventListener('mouseup', cancelPress);
-                btn.addEventListener('mouseleave', cancelPress);
-                btn.addEventListener('touchend', cancelPress);
-                btn.addEventListener('contextmenu', startPress);
-                
                 btn.onclick = (e) => { 
-                    cancelPress(); 
                     if (isLongPress) {
                         e.preventDefault();
                         e.stopPropagation();
-                        setTimeout(() => { isLongPress = false; }, 100);
+                        setTimeout(() => { isLongPress = false; }, 50);
                         return;
                     }
                     selectCategory(cat.id); 
