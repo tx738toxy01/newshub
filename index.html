@@ -1890,7 +1890,7 @@
                 activeCount: (n) => `${n} aktívnych`,
                 selectAll: 'Označiť všetky',
                 deselectAll: 'Zrušiť všetky',
-                resetDefaults: 'Obnoviť podľa servera',
+                resetDefaults: 'Reset',
                 newArticlesPill: 'Najnovšie správy',
                 backBtn: 'Späť',
                 backToSettings: 'Späť do nastavení',
@@ -1922,7 +1922,9 @@
                     'Slovensko': 'Slovensko',
                     'Česko': 'Česko',
                     'Svetové (EN)': 'Svetové (EN)'
-                }
+                },
+                editorSourcesSubtitle: 'Upraviť zdroje pre túto sekciu',
+                sourcesEmptyMsg: 'V tejto sekcii zatiaľ nie sú aktívne žiadne zdroje.'
             },
             en: {
                 sidebarTitle: 'Categories',
@@ -1938,7 +1940,7 @@
                 activeCount: (n) => `${n} active`,
                 selectAll: 'Select all',
                 deselectAll: 'Deselect all',
-                resetDefaults: 'Reset to default',
+                resetDefaults: 'Reset',
                 newArticlesPill: 'Latest news',
                 backBtn: 'Back',
                 backToSettings: 'Back to settings',
@@ -1959,6 +1961,22 @@
                 progressCount: (prefix, done, total) => `${prefix} (${done}/${total})...`,
                 shownCount: (n) => `Showing ${n} articles`,
                 noSource: 'No source',
+                selectSourceMsg: 'Please select at least one news source.',
+                blockedMsg: 'No articles found. Selected websites may be blocking access.',
+                noCategoryArticles: (cat) => `No articles found for category "${cat}" in the current feed.`,
+                error: 'Error',
+                errorMsg: 'An error occurred. Please refresh the page.',
+                readMore: 'Read more →',
+                locale: 'en-US',
+                groups: {
+                    'Slovensko': 'Slovakia',
+                    'Česko': 'Czechia',
+                    'Svetové (EN)': 'World (EN)'
+                },
+                editorSourcesSubtitle: 'Manage sources for this section',
+                sourcesEmptyMsg: 'There are currently no active sources in this section.'
+            }
+        };
                 selectSourceMsg: 'Please select at least one news source.',
                 blockedMsg: 'No articles found. Selected websites may be blocking access.',
                 noCategoryArticles: (cat) => `No articles found for category "${cat}" in the current feed.`,
@@ -2182,10 +2200,10 @@ const searchI18n = {
                         <div class="settings-item-icon">${cat.icon}</div>
                         <div class="settings-item-text">
                             <strong>${cat.name[currentLang]}</strong>
-                            <span style="font-size: 0.75rem;">Upraviť zdroje pre túto sekciu</span>
+                            <span style="font-size: 0.75rem;">${t.editorSourcesSubtitle}</span>
                         </div>
                     </div>
-                    <span class="settings-item-badge">${count} zdrojov</span>
+                    <span class="settings-item-badge">${count}</span>
                 `;
                 listDiv.appendChild(item);
             });
@@ -2211,7 +2229,7 @@ const searchI18n = {
                 controls.innerHTML = `
                     <button onclick="toggleAllInCategory('${catId}', true)">${t.selectAll}</button>
                     <button onclick="toggleAllInCategory('${catId}', false)">${t.deselectAll}</button>
-                    <button onclick="resetCategory('${catId}')" style="background: transparent; border: 1px solid var(--border-light); color: var(--text-muted); flex: 0 0 auto; padding: 7px 10px;" title="Reset"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg></button>
+                    <button onclick="resetCategory('${catId}')" style="background: transparent; border: 1px solid var(--border-light); color: var(--text-muted);">${t.resetDefaults}</button>
                 `;
             }
 
@@ -2263,6 +2281,11 @@ const searchI18n = {
         }
 
         function toggleAllInCategory(catId, isChecked) {
+            const msg = currentLang === 'sk' 
+                ? (isChecked ? 'Naozaj chcete označiť všetky zdroje v tejto sekcii?' : 'Naozaj chcete zrušiť výber všetkých zdrojov v tejto sekcii?') 
+                : (isChecked ? 'Are you sure you want to select all sources in this section?' : 'Are you sure you want to deselect all sources in this section?');
+            if (!confirm(msg)) return;
+
             if (isChecked) {
                 categoryOverrides[catId] = sources.map(s => s.id);
             } else {
@@ -2275,6 +2298,11 @@ const searchI18n = {
         }
 
         function resetCategory(catId) {
+            const msg = currentLang === 'sk'
+                ? 'Naozaj chcete obnoviť predvolené zdroje pre túto sekciu?'
+                : 'Are you sure you want to restore default sources for this section?';
+            if (!confirm(msg)) return;
+
             delete categoryOverrides[catId];
             localStorage.setItem('newshub_cat_overrides', JSON.stringify(categoryOverrides));
             renderCategoryEditor(catId);
@@ -2845,19 +2873,28 @@ const searchI18n = {
                     
                     if (isBackground && currentTopLink) {
                         let filteredNew = rawArticlesCache;
+                        
+                        let activeSourceIds = new Set();
                         if (activeCategory !== 'all') {
-                            const allowedIds = new Set(getCategorySourceIds(activeCategory));
-                            filteredNew = rawArticlesCache.filter(a => allowedIds.has(a.sourceId));
+                            activeSourceIds = new Set(getCategorySourceIds(activeCategory));
                         } else {
-                            const checkedIds = new Set(getCheckedSources().map(s => s.id));
-                            filteredNew = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
+                            activeSourceIds = new Set(getCheckedSources().map(s => s.id));
                         }
+                        
+                        if (selectedSourceFilter) {
+                            activeSourceIds = new Set([selectedSourceFilter]);
+                        }
+                        
+                        filteredNew = rawArticlesCache.filter(a => activeSourceIds.has(a.sourceId));
                         
                         const newTopLink = filteredNew.length > 0 ? filteredNew[0].link : null;
                         
                         if (newTopLink && newTopLink !== currentTopLink) {
-                            const pill = document.getElementById('new-articles-pill');
-                            if (pill) pill.classList.add('show');
+                            const currentFilteredTopLink = articlesCache.length > 0 ? articlesCache[0].link : null;
+                            if (newTopLink !== currentFilteredTopLink) {
+                                const pill = document.getElementById('new-articles-pill');
+                                if (pill) pill.classList.add('show');
+                            }
                         }
                     } else {
                         applyFilterAndRender(false);
