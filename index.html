@@ -609,7 +609,7 @@
 
         @media (max-width: 768px) {
             .categories-bar {
-                top: 53px;
+                top: 61px;
                 padding: 4px 6px;
             }
             .cat-btn {
@@ -1608,22 +1608,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="category-sources-modal">
-        <div class="modal-window" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <div class="modal-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                    <span id="cat-sources-modal-title">Zdroje v sekcii</span>
-                </div>
-                <button class="modal-close" onclick="closeAllModals()" aria-label="Zavrieť">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                </button>
-            </div>
-            <div class="modal-body" id="cat-sources-list-container" style="padding-top: 10px;">
-            </div>
-        </div>
-    </div>
-
     <div class="layout">
         <main class="main-content">
             <button id="new-articles-pill" class="new-articles-pill" onclick="showNewestArticles()">
@@ -2106,7 +2090,8 @@ const searchI18n = {
                     if (e.type === 'contextmenu') { 
                         e.preventDefault();
                         isLongPress = true;
-                        showCategorySourcesModal(cat.id); 
+                        renderCategoryEditor(cat.id);
+                        openModal('sources-modal');
                         return; 
                     }
                     if (e.type === 'mousedown' && isLongPress) return;
@@ -2114,7 +2099,9 @@ const searchI18n = {
                     isLongPress = false;
                     pressTimer = setTimeout(() => { 
                         isLongPress = true; 
-                        showCategorySourcesModal(cat.id); 
+                        if (navigator.vibrate) navigator.vibrate(50);
+                        renderCategoryEditor(cat.id);
+                        openModal('sources-modal');
                     }, 450);
                 };
                 
@@ -2140,46 +2127,6 @@ const searchI18n = {
                 
                 catMenu.appendChild(btn);
             });
-        }
-function showCategorySourcesModal(catId) {
-            const catInfo = categories.find(c => c.id === catId);
-            if (!catInfo) return;
-            
-            const container = document.getElementById('cat-sources-list-container');
-            const title = document.getElementById('cat-sources-modal-title');
-            if (!container || !title) return;
-            
-            title.innerText = catInfo.name[currentLang];
-            
-            let catSources = [];
-            if (catId === 'all') {
-                catSources = getCheckedSources();
-            } else {
-                const sourceIds = getCategorySourceIds(catId);
-                catSources = sources.filter(s => sourceIds.includes(s.id));
-            }
-            
-            container.innerHTML = '';
-            
-            if (catSources.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">V tejto sekcii zatiaľ nie sú aktívne žiadne zdroje.</div>`;
-            } else {
-                catSources.forEach(src => {
-                    const row = document.createElement('div');
-                    row.className = 'source-item-row';
-                    row.innerHTML = `
-                        <div class="source-item" style="cursor: default;">
-                            <span>${src.name}</span>
-                        </div>
-                        <button class="btn-source-filter" onclick="closeAllModals(); filterBySource(event, '${src.id}')" title="${i18n[currentLang].sourceFilterArticles(src.name)}" aria-label="${i18n[currentLang].sourceFilterArticles(src.name)}">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        </button>
-                    `;
-                    container.appendChild(row);
-                });
-            }
-            
-            openModal('category-sources-modal');
         }
 
         let categoryOverrides = {};
@@ -2892,7 +2839,18 @@ function showCategorySourcesModal(catId) {
                     saveCachedArticles();
                     
                     if (isBackground && currentTopLink) {
-                        if (rawArticlesCache.length > 0 && rawArticlesCache[0].link !== currentTopLink) {
+                        let filteredNew = rawArticlesCache;
+                        if (activeCategory !== 'all') {
+                            const allowedIds = new Set(getCategorySourceIds(activeCategory));
+                            filteredNew = rawArticlesCache.filter(a => allowedIds.has(a.sourceId));
+                        } else {
+                            const checkedIds = new Set(getCheckedSources().map(s => s.id));
+                            filteredNew = rawArticlesCache.filter(a => checkedIds.has(a.sourceId));
+                        }
+                        
+                        const newTopLink = filteredNew.length > 0 ? filteredNew[0].link : null;
+                        
+                        if (newTopLink && newTopLink !== currentTopLink) {
                             const pill = document.getElementById('new-articles-pill');
                             if (pill) pill.classList.add('show');
                         }
