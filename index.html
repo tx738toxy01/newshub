@@ -368,6 +368,32 @@
             cursor: default;
         }
 
+        .badge-dead {
+            color: #f87171;
+            font-weight: 800;
+        }
+
+        .source-item-row.source-dead {
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .source-item-row.source-dead .source-item span {
+            color: #f87171;
+        }
+
+        .source-item-row.source-dead .source-item .source-dead-tag {
+            margin-left: auto;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: var(--radius-full);
+            background: rgba(239, 68, 68, 0.16);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            white-space: nowrap;
+        }
+
         .source-controls {
             display: flex;
             gap: 8px;
@@ -1960,12 +1986,12 @@
             },
             en: {
                 sidebarTitle: 'Categories',
-                sourcesTitle: 'News Sources',
+                sourcesTitle: 'Sources',
                 settingsTitle: 'Settings',
                 fontsTitle: 'Article Fonts',
                 fontsItemTitle: 'Fonts',
                 fontsItemDesc: 'Select newspaper font and style',
-                sourcesItemTitle: 'News Sources',
+                sourcesItemTitle: 'Sources',
                 sourcesItemDesc: 'Manage news websites',
                 serifLabel: 'Serif Fonts',
                 sansLabel: 'Sans-Serif Fonts',
@@ -2274,13 +2300,105 @@ const searchI18n = {
             renderCategoriesMenu();
         }
 
+        function getWorkingSourceIds() {
+            const working = new Set();
+            rawArticlesCache.forEach(a => {
+                if (a.sourceId) working.add(a.sourceId);
+            });
+            return working;
+        }
+
+        function isSourceDead(srcId) {
+            if (!rawArticlesCache || rawArticlesCache.length === 0) return false;
+            return !getWorkingSourceIds().has(srcId);
+        }
+
+        const sourceDiagnosticCache = {};
+
+        function formatDeadReason(reasonKey) {
+            const labels = {
+                sk: {
+                    blocked: 'Zablokované',
+                    dead: 'Mŕtve',
+                    empty: 'Prázdne',
+                    checking: 'Overujem...'
+                },
+                en: {
+                    blocked: 'Blocked',
+                    dead: 'Dead',
+                    empty: 'Empty',
+                    checking: 'Checking...'
+                }
+            };
+            const dict = labels[currentLang] || labels.sk;
+            return dict[reasonKey] || dict.empty;
+        }
+
+        function classifySourceStatus(src) {
+            if (sourceDiagnosticCache[src.id]) return sourceDiagnosticCache[src.id];
+            const rawStatus = String(src.status || src.error || src.reason || src.httpStatus || src.statusCode || '').toLowerCase();
+            if (rawStatus) {
+                if (rawStatus.includes('block') || rawStatus.includes('403') || rawStatus.includes('401') || rawStatus.includes('429') || rawStatus.includes('cloudflare') || rawStatus.includes('forbidden')) {
+                    return 'blocked';
+                }
+                if (rawStatus.includes('dead') || rawStatus.includes('404') || rawStatus.includes('410') || rawStatus.includes('500') || rawStatus.includes('502') || rawStatus.includes('503') || rawStatus.includes('504') || rawStatus.includes('timeout') || rawStatus.includes('enotfound') || rawStatus.includes('econnrefused') || rawStatus.includes('error') || rawStatus.includes('fail')) {
+                    return 'dead';
+                }
+                if (rawStatus.includes('empty') || rawStatus.includes('prázdne') || rawStatus.includes('0')) {
+                    return 'empty';
+                }
+            }
+            const feedUrl = src.url || src.rss || src.feedUrl;
+            if (!feedUrl) return 'empty';
+            return 'checking';
+        }
+
+        async function probeDeadSource(src) {
+            const feedUrl = src.url || src.rss || src.feedUrl;
+            if (!feedUrl || sourceDiagnosticCache[src.id]) return;
+            let result = 'dead';
+            try {
+                const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+                if (!res.ok) {
+                    result = (res.status === 401 || res.status === 403 || res.status === 429) ? 'blocked' : 'dead';
+                } else {
+                    const data = await res.json();
+                    const httpCode = data && data.status && data.status.http_code ? Number(data.status.http_code) : 200;
+                    const text = decodeAllOriginsContents(data && data.contents ? data.contents : '');
+                    const lowerText = text.toLowerCase();
+                    if (httpCode === 401 || httpCode === 403 || httpCode === 429 || lowerText.includes('cf-browser-verification') || lowerText.includes('attention required! | cloudflare') || lowerText.includes('access denied')) {
+                        result = 'blocked';
+                    } else if (httpCode >= 400 || !text) {
+                        result = 'dead';
+                    } else if (/<(?:item|entry)\b/i.test(text)) {
+                        result = 'empty';
+                    } else if (/<(?:rss|feed|channel)\b/i.test(text)) {
+                        result = 'empty';
+                    } else {
+                        result = 'dead';
+                    }
+                }
+            } catch (e) {
+                result = 'dead';
+            }
+            sourceDiagnosticCache[src.id] = result;
+            const tagEl = document.getElementById(`dead-tag-${src.id}`);
+            if (tagEl) tagEl.textContent = formatDeadReason(result);
+        }
+
         function renderSourcesList() {
             const srcContainer = document.getElementById('sources-list-container');
             if (!srcContainer) return;
             const t = i18n[currentLang];
             
+            const checkedSources = getCheckedSources();
+            const deadTotal = checkedSources.filter(s => isSourceDead(s.id)).length;
             const modalTitle = document.getElementById('sources-modal-header-title');
-            if (modalTitle) modalTitle.innerText = t.sourcesTitle;
+            if (modalTitle) {
+                modalTitle.innerHTML = deadTotal > 0
+                    ? `${t.sourcesTitle} (${checkedSources.length} / <span class="badge-dead">${deadTotal}</span>)`
+                    : `${t.sourcesTitle} (${checkedSources.length})`;
+            }
             
             const backBtn = document.querySelector('#sources-modal .modal-close[title]');
             if (backBtn) {
@@ -2296,7 +2414,12 @@ const searchI18n = {
             listDiv.className = 'settings-menu-list';
 
             categories.forEach((cat, index) => {
-                const count = getCategorySourceIds(cat.id).length;
+                const catIds = getCategorySourceIds(cat.id);
+                const count = catIds.length;
+                const deadCount = catIds.filter(id => isSourceDead(id)).length;
+                const badgeContent = deadCount > 0
+                    ? `${count} / <span class="badge-dead">${deadCount}</span>`
+                    : `${count}`;
                 
                 const item = document.createElement('div');
                 item.className = 'settings-menu-item';
@@ -2316,7 +2439,7 @@ const searchI18n = {
                         </div>
                     </div>
                     <div class="cat-order-actions">
-                        <span class="settings-item-badge">${count}</span>
+                        <span class="settings-item-badge">${badgeContent}</span>
                         <button type="button" class="btn-cat-move" onclick="moveCategory(event, ${index}, -1)" ${index === 0 ? 'disabled' : ''}>
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
                         </button>
@@ -2370,18 +2493,25 @@ const searchI18n = {
 
                 sources.filter(s => s.group === groupName).forEach(src => {
                     const isChecked = activeIds.has(src.id);
+                    const dead = isSourceDead(src.id);
+                    const reasonKey = dead ? classifySourceStatus(src) : '';
+                    const deadTagMarkup = dead ? `<span class="source-dead-tag" id="dead-tag-${src.id}">${formatDeadReason(reasonKey)}</span>` : '';
                     const row = document.createElement('div');
-                    row.className = 'source-item-row';
+                    row.className = `source-item-row${dead ? ' source-dead' : ''}`;
                     row.innerHTML = `
                         <label class="source-item">
                             <input type="checkbox" value="${src.id}" ${isChecked ? 'checked' : ''} onchange="updateCatOverride('${catId}', '${src.id}', this.checked)">
                             <span>${src.name}</span>
+                            ${deadTagMarkup}
                         </label>
                         <button class="btn-source-filter" onclick="closeAllModals(); filterBySource(event, '${src.id}')" title="${t.sourceFilterArticles(src.name)}" aria-label="${t.sourceFilterArticles(src.name)}">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </button>
                     `;
                     groupDiv.appendChild(row);
+                    if (dead && reasonKey === 'checking') {
+                        probeDeadSource(src);
+                    }
                 });
                 srcContainer.appendChild(groupDiv);
             });
@@ -2601,15 +2731,23 @@ const searchI18n = {
         function updateGroupCheckboxes() { }
 
         function updateDropdownButton() {
-            const checkedCount = getCheckedSources().length;
+            const checkedSources = getCheckedSources();
+            const checkedCount = checkedSources.length;
+            const deadCount = checkedSources.filter(s => isSourceDead(s.id)).length;
             const modalTitle = document.getElementById('sources-modal-header-title');
             const badge = document.getElementById('settings-sources-count-badge');
+            const controls = document.querySelector('#sources-modal .source-controls');
+            const isListOpen = !controls || controls.style.display === 'none';
             const t = i18n[currentLang];
-            if (modalTitle) {
-                modalTitle.innerText = `${t.sourcesTitle} (${checkedCount})`;
+            if (modalTitle && isListOpen) {
+                modalTitle.innerHTML = deadCount > 0
+                    ? `${t.sourcesTitle} (${checkedCount} / <span class="badge-dead">${deadCount}</span>)`
+                    : `${t.sourcesTitle} (${checkedCount})`;
             }
             if (badge) {
-                badge.innerText = t.activeCount(checkedCount);
+                badge.innerHTML = deadCount > 0
+                    ? `${t.activeCount(checkedCount)} / <span class="badge-dead">${deadCount}</span>`
+                    : t.activeCount(checkedCount);
             }
             updateGroupCheckboxes();
         }
@@ -2991,6 +3129,11 @@ const searchI18n = {
                     });
                     rawArticlesCache.sort((a, b) => b.pubDate - a.pubDate);
                     saveCachedArticles();
+                    updateDropdownButton();
+                    const controls = document.querySelector('#sources-modal .source-controls');
+                    if (!controls || controls.style.display === 'none') {
+                        renderSourcesList();
+                    }
                     
                     if (isBackground && currentTopLink) {
                         let filteredNew = rawArticlesCache;
