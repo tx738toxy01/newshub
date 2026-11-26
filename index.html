@@ -2231,8 +2231,25 @@ const searchI18n = {
             try {
                 const saved = localStorage.getItem(STORAGE_CAT_ORDER_KEY);
                 if (!saved) return;
-                const order = JSON.parse(saved);
-                if (!Array.isArray(order)) return;
+                const parsed = JSON.parse(saved);
+                if (!Array.isArray(parsed)) return;
+                let changed = false;
+                const order = parsed.filter(id => {
+                    if (id === 'ekonomika') {
+                        changed = true;
+                        return false;
+                    }
+                    return true;
+                });
+                if (!order.includes('ultralight')) {
+                    const gadIdx = order.indexOf('gad');
+                    if (gadIdx !== -1) {
+                        order.splice(gadIdx + 1, 0, 'ultralight');
+                    } else {
+                        order.push('ultralight');
+                    }
+                    changed = true;
+                }
                 categories.sort((a, b) => {
                     const idxA = order.indexOf(a.id);
                     const idxB = order.indexOf(b.id);
@@ -2241,6 +2258,7 @@ const searchI18n = {
                     if (idxB === -1) return -1;
                     return idxA - idxB;
                 });
+                if (changed) saveCategoryOrder();
             } catch (e) {}
         }
 
