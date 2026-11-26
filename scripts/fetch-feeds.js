@@ -91,13 +91,17 @@ function cleanHtml(rawHtml, sourceName = '') {
 }
 
 function cleanTitle(rawTitle, sourceName = '') {
-    if (!rawTitle) return 'Bez názvu';
+    if (!rawTitle) return '';
     let title = rawTitle
         .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, '$1')
         .replace(/<[^>]+>/g, '')
         .replace(/&amp;/g, '&')
         .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
+        .replace(/&apos;|&#39;|&#039;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+        .replace(/\s+/g, ' ')
         .trim();
 
     if (sourceName) {
@@ -111,19 +115,21 @@ function cleanTitle(rawTitle, sourceName = '') {
             }
         }
     }
-    return title || 'Bez názvu';
+    return title;
 }
 
 function extractImage(xmlItem) {
     const enclosureMatch = xmlItem.match(/<enclosure[^>]+url=["'](https?:\/\/[^"'>\s]+)["'][^>]*>/i);
-    if (enclosureMatch && enclosureMatch[1]) return enclosureMatch[1];
+    if (enclosureMatch && enclosureMatch[1] && !/type=["'](?:audio|video)\//i.test(enclosureMatch[0])) {
+        return enclosureMatch[1].replace(/&amp;/g, '&');
+    }
 
     const mediaMatch = xmlItem.match(/<(?:media:content|media:thumbnail)[^>]+url=["'](https?:\/\/[^"'>\s]+)["'][^>]*>/i);
-    if (mediaMatch && mediaMatch[1]) return mediaMatch[1];
+    if (mediaMatch && mediaMatch[1]) return mediaMatch[1].replace(/&amp;/g, '&');
 
     const imgMatches = xmlItem.matchAll(/<img[^>]+(?:src|data-src)=["'](https?:\/\/[^"'>\s]+)["']/gi);
     for (const m of imgMatches) {
-        const u = m[1];
+        const u = m[1].replace(/&amp;/g, '&');
         if (!u.includes('googleusercontent.com/J6_coFbogxh') && !u.includes('pixel') && !u.includes('1x1') && !u.includes('tracker')) {
             return u;
         }
@@ -137,9 +143,10 @@ function parseFeedXml(xml, src) {
     const items = xml.match(itemRegex) || [];
 
     for (const item of items.slice(0, 30)) {
-        const titleMatch = item.match(/<title[^>]*>(?:<!\[CDATA\[([\s\S]*?)\]\]>|([^<]+))<\/title>/i);
-        const rawTitle = titleMatch ? (titleMatch[1] || titleMatch[2] || '') : '';
+        const titleMatch = item.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        const rawTitle = titleMatch ? titleMatch[1] : '';
         const title = cleanTitle(rawTitle, src.name);
+        if (!title) continue;
 
         let link = '';
         const linkHrefMatch = item.match(/<link[^>]+href=["'](https?:\/\/[^"'\s]+)["']/i);
